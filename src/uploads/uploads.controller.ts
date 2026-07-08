@@ -33,7 +33,12 @@ export class UploadsController {
   @Post('image')
   @UseInterceptors(FileInterceptor('file'))
   async uploadImage(@UploadedFile() file: any) {
+    console.log('📸 Entró en uploadImage');
+    console.log(file);
+
     const imageUrl = await this.uploadsService.uploadImage(file);
+
+    console.log('✅ URL:', imageUrl);
 
     return {
       imageUrl,
