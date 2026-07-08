@@ -33,6 +33,7 @@ export class ConcertsService {
 
         festival: dto.festival,
         venue: dto.venue,
+        city: dto.city ?? '',
 
         description: dto.description ?? '',
         imageUrl: dto.imageUrl ?? '',

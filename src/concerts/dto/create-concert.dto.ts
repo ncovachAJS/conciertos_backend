@@ -53,6 +53,14 @@ export class CreateConcertDto {
   venue!: string;
 
   @ApiPropertyOptional({
+    example: 'Cartagena',
+    description: 'Ciudad donde se celebra el concierto',
+  })
+  @IsOptional()
+  @IsString()
+  city?: string;
+
+  @ApiPropertyOptional({
     example: 'Concierto de la gira mundial',
   })
   @IsOptional()

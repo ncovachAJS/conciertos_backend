@@ -22,6 +22,7 @@ model Concert {
 
   festival    String
   venue       String
+  city        String?
 
   description String?
 
