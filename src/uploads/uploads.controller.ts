@@ -31,11 +31,11 @@ export class UploadsController {
     },
   })
   @Post('image')
-async uploadImage() {
-  console.log('🔥 Entró en el controlador');
-
-  return {
-    imageUrl: 'https://prueba.com/test.jpg',
-  };
-}
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadImage(@UploadedFile() file: any) {
+    console.log('🔥 Entró en uploadImage');
+    return {
+      imageUrl: await this.uploadsService.uploadImage(file),
+    };
+  }
 }

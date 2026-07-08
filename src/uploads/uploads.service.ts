@@ -12,7 +12,8 @@ export class UploadsService {
   }
 
   async uploadImage(file: any): Promise<string> {
-    console.log('🚀 Subiendo imagen a Cloudinary...');
+    console.log('📸 Archivo recibido:', !!file);
+
     return new Promise((resolve, reject) => {
       cloudinary.uploader
         .upload_stream(
@@ -20,8 +21,9 @@ export class UploadsService {
             folder: 'conciertos',
           },
           (error, result) => {
-            console.log('Cloudinary error:', error);
-            console.log('Cloudinary result:', result);
+            console.log('❌ Cloudinary error:', error);
+            console.log('✅ Cloudinary result:', result);
+
             if (error) {
               return reject(error);
             }
