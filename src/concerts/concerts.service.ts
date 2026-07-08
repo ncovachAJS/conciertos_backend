@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateConcertDto } from './dto/create-concert.dto';
@@ -7,63 +7,81 @@ import { UpdateConcertDto } from './dto/update-concert.dto';
 @Injectable()
 export class ConcertsService {
 
-    constructor(
-        private readonly prisma: PrismaService,
-    ) { }
+  private readonly logger = new Logger(ConcertsService.name);
 
-    async findAll() {
+  constructor(
+    private readonly prisma: PrismaService,
+  ) {}
 
-        return this.prisma.concert.findMany({
-            orderBy: {
-                date: 'asc',
-            },
-        });
+  async findAll() {
+    return this.prisma.concert.findMany({
+      orderBy: {
+        date: 'asc',
+      },
+    });
+  }
 
-    }
+  async create(dto: CreateConcertDto) {
 
-    async create(dto: CreateConcertDto) {
+    const concert = await this.prisma.concert.create({
 
-        return this.prisma.concert.create({
+      data: {
 
-            data: {
+        name: dto.name,
+        artist: dto.artist,
+        date: new Date(dto.date),
 
-                name: dto.name,
-                artist: dto.artist,
-                date: new Date(dto.date),
+        festival: dto.festival,
+        venue: dto.venue,
 
-                festival: dto.festival,
-                venue: dto.venue,
+        description: dto.description ?? '',
+        imageUrl: dto.imageUrl ?? '',
 
-                description: dto.description ?? '',
-                imageUrl: dto.imageUrl ?? '',
+        rating: dto.rating ?? 0,
+        liked: dto.liked ?? false,
 
-                rating: dto.rating ?? 0,
-                liked: dto.liked ?? false,
+      },
 
-            },
+    });
 
-        });
+    this.logger.log(
+      `Concierto creado: ${concert.name} (${concert.id})`,
+    );
 
-    }
+    return concert;
+  }
 
-    async update(id: string, dto: UpdateConcertDto) {
-        return this.prisma.concert.update({
-            where: {
-                id,
-            },
-            data: {
-                ...dto,
-                date: dto.date ? new Date(dto.date) : undefined,
-            },
-        });
-    }
+  async update(id: string, dto: UpdateConcertDto) {
 
-    async remove(id: string) {
-        return this.prisma.concert.delete({
-            where: {
-                id,
-            },
-        });
-    }
+    const concert = await this.prisma.concert.update({
+      where: {
+        id,
+      },
+      data: {
+        ...dto,
+        date: dto.date ? new Date(dto.date) : undefined,
+      },
+    });
 
+    this.logger.log(
+      `Concierto actualizado: ${concert.name} (${concert.id})`,
+    );
+
+    return concert;
+  }
+
+  async remove(id: string) {
+
+    const concert = await this.prisma.concert.delete({
+      where: {
+        id,
+      },
+    });
+
+    this.logger.log(
+      `Concierto eliminado: ${concert.name} (${concert.id})`,
+    );
+
+    return concert;
+  }
 }
