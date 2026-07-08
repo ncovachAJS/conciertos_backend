@@ -13,13 +13,13 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateConcertDto {
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Iron Maiden',
     description: 'Nombre del concierto',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  name!: string;
+  name?: string;
 
   @ApiProperty({
     example: 'Iron Maiden',
@@ -36,21 +36,21 @@ export class CreateConcertDto {
   @IsDateString()
   date!: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Rock Imperium',
     description: 'Festival',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  festival!: string;
+  festival?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Parque Torres',
     description: 'Lugar del concierto',
   })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  venue!: string;
+  venue?: string;
 
   @ApiPropertyOptional({
     example: 'Cartagena',

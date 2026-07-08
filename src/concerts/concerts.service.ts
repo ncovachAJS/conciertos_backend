@@ -27,12 +27,12 @@ export class ConcertsService {
 
       data: {
 
-        name: dto.name,
+        name: dto.name ?? '',
         artist: dto.artist,
         date: new Date(dto.date),
 
-        festival: dto.festival,
-        venue: dto.venue,
+        festival: dto.festival ?? '',
+        venue: dto.venue ?? '',
         city: dto.city ?? '',
 
         description: dto.description ?? '',
