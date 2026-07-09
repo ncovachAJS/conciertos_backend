@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 
 import { PrismaModule } from './prisma/prisma.module';
 import { ConcertsModule } from './concerts/concerts.module';
+import { PhotosModule } from './photos/photos.module';
 
 import { UploadsModule } from './uploads/uploads.module';
 
@@ -13,6 +14,7 @@ import { UploadsModule } from './uploads/uploads.module';
     }),
     PrismaModule,
     ConcertsModule,
+    PhotosModule,
     UploadsModule,
   ],
 })

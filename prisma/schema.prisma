@@ -31,6 +31,22 @@ model Concert {
   rating      Int      @default(0)
   liked       Boolean  @default(false)
 
+  photos      ConcertPhoto[]
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model ConcertPhoto {
+  id        String   @id @default(cuid())
+
+  concertId String
+  concert   Concert  @relation(fields: [concertId], references: [id], onDelete: Cascade)
+
+  imageUrl  String
+  caption   String?
+
+  createdAt DateTime @default(now())
+
+  @@index([concertId])
 }
