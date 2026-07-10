@@ -7,6 +7,8 @@ import { PhotosModule } from './photos/photos.module';
 
 import { UploadsModule } from './uploads/uploads.module';
 
+import { SpotifyModule } from './spotify/spotify.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -16,6 +18,7 @@ import { UploadsModule } from './uploads/uploads.module';
     ConcertsModule,
     PhotosModule,
     UploadsModule,
+    SpotifyModule,
   ],
 })
 export class AppModule {}
