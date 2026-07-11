@@ -45,12 +45,6 @@ export class RecommendationsService {
 
     const uniqueArtists = [...new Set(artists)];
 
-    const attractions = await this.findAttraction('Ghost');
-
-console.log(JSON.stringify(attractions, null, 2));
-
-return [];
-
     for (const artist of uniqueArtists) {
       console.log('Buscando:', artist);
       try {
