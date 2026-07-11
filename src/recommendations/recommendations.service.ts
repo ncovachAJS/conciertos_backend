@@ -13,21 +13,20 @@ export class RecommendationsService {
   ) {}
 
   async getRecommendations(dto: RecommendationsDto) {
-    
     const { artists, countryCode } = dto;
 
     const apiKey = this.config.get<string>('TICKETMASTER_API_KEY');
 
-    const url = 'https://app.ticketmaster.com/discovery/v2/events.json';
+    const url = 'https://app.ticketmaster.com/discovery/v2/attractions.json';
 
     const responses: any[] = [];
 
     console.log('Artistas recibidos:', artists);
 
     const uniqueArtists = [...new Set(artists)];
-    
+
     for (const artist of uniqueArtists) {
-        console.log('Buscando:', artist);
+      console.log('Buscando:', artist);
       try {
         console.log(`🔍 Buscando ${artist}`);
 
@@ -35,16 +34,16 @@ export class RecommendationsService {
           this.http.get(url, {
             params: {
               apikey: apiKey,
-              attractionName: artist,
+              keyword: artist,
               classificationName: 'Music',
-              sort: 'date,asc',
-              size: 20,
-              ...(countryCode?.trim() ? { countryCode } : {}),
+              size: 5,
             },
           }),
         );
 
         responses.push(response.data);
+
+        console.log(JSON.stringify(response.data, null, 2));
       } catch (error: any) {
         console.error(
           `❌ Error buscando ${artist}:`,
