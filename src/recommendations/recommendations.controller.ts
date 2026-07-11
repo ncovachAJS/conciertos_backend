@@ -1,5 +1,6 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 
+import { RecommendationsDto } from './dto/recommendations.dto';
 import { RecommendationsService } from './recommendations.service';
 
 @Controller('recommendations')
@@ -8,10 +9,10 @@ export class RecommendationsController {
     private readonly recommendationsService: RecommendationsService,
   ) {}
 
-  @Get()
+  @Post()
   getRecommendations(
-    @Query('artist') artist: string,
+    @Body() dto: RecommendationsDto,
   ) {
-    return this.recommendationsService.getRecommendations(artist);
+    return this.recommendationsService.getRecommendations(dto);
   }
 }
