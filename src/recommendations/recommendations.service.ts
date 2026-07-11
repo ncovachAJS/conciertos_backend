@@ -17,7 +17,7 @@ export class RecommendationsService {
 
     const apiKey = this.config.get<string>('TICKETMASTER_API_KEY');
 
-    const url = 'https://app.ticketmaster.com/discovery/v2/attractions.json';
+    const url = 'https://app.ticketmaster.com/discovery/v2/events.json';
 
     const responses: any[] = [];
 
@@ -36,7 +36,9 @@ export class RecommendationsService {
               apikey: apiKey,
               keyword: artist,
               classificationName: 'Music',
-              size: 5,
+              sort: 'date,asc',
+              size: 20,
+              ...(countryCode?.trim() ? { countryCode } : {}),
             },
           }),
         );
