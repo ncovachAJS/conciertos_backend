@@ -30,6 +30,7 @@ model Concert {
 
   rating      Int      @default(0)
   liked       Boolean  @default(false)
+  favorite    Boolean  @default(false)
 
   photos      ConcertPhoto[]
 
