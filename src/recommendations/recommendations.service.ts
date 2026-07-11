@@ -20,7 +20,7 @@ export class RecommendationsService {
         params: {
           apikey: apiKey,
           keyword: artist,
-          countryCode: 'ES',
+          classificationName: 'Music',
           sort: 'date,asc',
           size: 20,
         },
