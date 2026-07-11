@@ -91,4 +91,11 @@ export class CreateConcertDto {
   @IsOptional()
   @IsBoolean()
   liked?: boolean;
+
+  @ApiPropertyOptional({
+    example: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  favorite?: boolean;
 }
