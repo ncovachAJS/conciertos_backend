@@ -11,9 +11,7 @@ export class RecommendationsController {
 
   @Post()
   @HttpCode(HttpStatus.OK)
-  getRecommendations(
-    @Body() dto: RecommendationsDto,
-  ) {
+  getRecommendations(@Body() dto: RecommendationsDto) {
     return this.recommendationsService.getRecommendations(dto);
   }
 }
