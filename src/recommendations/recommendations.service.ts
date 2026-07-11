@@ -12,6 +12,26 @@ export class RecommendationsService {
     private readonly config: ConfigService,
   ) {}
 
+  private async findAttraction(artist: string) {
+  const apiKey = this.config.get<string>('TICKETMASTER_API_KEY');
+
+  const response = await firstValueFrom(
+    this.http.get(
+      'https://app.ticketmaster.com/discovery/v2/attractions.json',
+      {
+        params: {
+          apikey: apiKey,
+          keyword: artist,
+          classificationName: 'Music',
+          size: 10,
+        },
+      },
+    ),
+  );
+
+  return response.data._embedded?.attractions ?? [];
+}
+
   async getRecommendations(dto: RecommendationsDto) {
     const { artists, countryCode } = dto;
 
@@ -24,6 +44,12 @@ export class RecommendationsService {
     console.log('Artistas recibidos:', artists);
 
     const uniqueArtists = [...new Set(artists)];
+
+    const attractions = await this.findAttraction('Ghost');
+
+console.log(JSON.stringify(attractions, null, 2));
+
+return [];
 
     for (const artist of uniqueArtists) {
       console.log('Buscando:', artist);
