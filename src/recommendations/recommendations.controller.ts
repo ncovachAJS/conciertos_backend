@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 
 import { RecommendationsDto } from './dto/recommendations.dto';
 import { RecommendationsService } from './recommendations.service';
@@ -10,6 +10,7 @@ export class RecommendationsController {
   ) {}
 
   @Post()
+  @HttpCode(HttpStatus.OK)
   getRecommendations(
     @Body() dto: RecommendationsDto,
   ) {
