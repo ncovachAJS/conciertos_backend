@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+
 import { RecommendationsDto } from './dto/recommendations.dto';
 
 @Injectable()
@@ -12,19 +13,29 @@ export class RecommendationsService {
   ) {}
 
   async getRecommendations(dto: RecommendationsDto) {
+    
     const { artists, countryCode } = dto;
-    const artist = artists[0];
+
     const apiKey = this.config.get<string>('TICKETMASTER_API_KEY');
 
     const url = 'https://app.ticketmaster.com/discovery/v2/events.json';
 
-    const responses = await Promise.all(
-      artists.map(async (artist) => {
+    const responses: any[] = [];
+
+    console.log('Artistas recibidos:', artists);
+
+    const uniqueArtists = [...new Set(artists)];
+    
+    for (const artist of uniqueArtists) {
+        console.log('Buscando:', artist);
+      try {
+        console.log(`🔍 Buscando ${artist}`);
+
         const response = await firstValueFrom(
           this.http.get(url, {
             params: {
               apikey: apiKey,
-              keyword: artist,
+              attractionName: artist,
               classificationName: 'Music',
               sort: 'date,asc',
               size: 20,
@@ -33,9 +44,14 @@ export class RecommendationsService {
           }),
         );
 
-        return response.data;
-      }),
-    );
+        responses.push(response.data);
+      } catch (error: any) {
+        console.error(
+          `❌ Error buscando ${artist}:`,
+          error.response?.status ?? error.message,
+        );
+      }
+    }
 
     const events = responses.flatMap(
       (response) => response._embedded?.events ?? [],
