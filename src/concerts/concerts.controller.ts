@@ -6,6 +6,8 @@ import {
   Param,
   Post,
   Put,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 
 import {
@@ -20,12 +22,15 @@ import { ConcertsService } from './concerts.service';
 import { CreateConcertDto } from './dto/create-concert.dto';
 import { UpdateConcertDto } from './dto/update-concert.dto';
 
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+
+@ApiBearerAuth('JWT')
+@UseGuards(JwtAuthGuard)
 @ApiTags('Concerts')
 @Controller('concerts')
 export class ConcertsController {
-  constructor(
-    private readonly concertsService: ConcertsService,
-  ) {}
+  constructor(private readonly concertsService: ConcertsService) {}
 
   @Get()
   @ApiOperation({
@@ -35,8 +40,8 @@ export class ConcertsController {
     status: 200,
     description: 'Lista de conciertos obtenida correctamente.',
   })
-  findAll() {
-    return this.concertsService.findAll();
+  findAll(@Req() req: any) {
+    return this.concertsService.findAll(req.user.id);
   }
 
   @Post()
@@ -50,10 +55,8 @@ export class ConcertsController {
     status: 201,
     description: 'Concierto creado correctamente.',
   })
-  create(
-    @Body() dto: CreateConcertDto,
-  ) {
-    return this.concertsService.create(dto);
+  create(@Req() req: any, @Body() dto: CreateConcertDto) {
+    return this.concertsService.create(req.user.id, dto);
   }
 
   @Put(':id')
@@ -72,10 +75,11 @@ export class ConcertsController {
     description: 'Concierto actualizado correctamente.',
   })
   update(
+    @Req() req: any,
     @Param('id') id: string,
     @Body() dto: UpdateConcertDto,
   ) {
-    return this.concertsService.update(id, dto);
+    return this.concertsService.update(req.user.id, id, dto);
   }
 
   @Delete(':id')
@@ -90,9 +94,7 @@ export class ConcertsController {
     status: 200,
     description: 'Concierto eliminado correctamente.',
   })
-  remove(
-    @Param('id') id: string,
-  ) {
-    return this.concertsService.remove(id);
+  remove(@Req() req: any, @Param('id') id: string) {
+    return this.concertsService.remove(req.user.id, id);
   }
 }
