@@ -25,6 +25,14 @@ async function bootstrap() {
     .setTitle('Conciertos API')
     .setDescription('API para gestionar conciertos')
     .setVersion('1.0')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+      },
+      'JWT',
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
@@ -33,9 +41,7 @@ async function bootstrap() {
 
   await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
 
-  console.log(
-    `🚀 API iniciada en puerto ${process.env.PORT ?? 3000}`,
-  );
+  console.log(`🚀 API iniciada en puerto ${process.env.PORT ?? 3000}`);
 }
 
 bootstrap();
