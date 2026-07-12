@@ -32,6 +32,10 @@ model Concert {
   liked       Boolean  @default(false)
   favorite    Boolean  @default(false)
 
+  userId String?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   photos      ConcertPhoto[]
 
   createdAt   DateTime @default(now())
@@ -50,4 +54,16 @@ model ConcertPhoto {
   createdAt DateTime @default(now())
 
   @@index([concertId])
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String
+  email     String    @unique
+  password  String
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  concerts  Concert[]
 }

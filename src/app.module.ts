@@ -10,6 +10,8 @@ import { UploadsModule } from './uploads/uploads.module';
 import { SpotifyModule } from './spotify/spotify.module';
 
 import { RecommendationsModule } from './recommendations/recommendations.module';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { RecommendationsModule } from './recommendations/recommendations.module'
     UploadsModule,
     SpotifyModule,
     RecommendationsModule,
+    UsersModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
