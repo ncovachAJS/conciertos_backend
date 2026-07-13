@@ -57,9 +57,6 @@ model ConcertPhoto {
 
 model User {
   id       String @id @default(cuid())
-
-  memberNumber Int @unique @default(autoincrement())
-
   name     String
   email    String @unique
   password String
