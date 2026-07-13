@@ -78,16 +78,19 @@ export class AuthService {
   }
 
   async me(userId: string) {
-    const user = await this.usersService.findById(userId);
+  const user = await this.usersService.findById(userId);
 
-    if (!user) {
-      return null;
-    }
-
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-    };
+  if (!user) {
+    return null;
   }
+
+  const memberNumber = await this.usersService.getMemberNumber(user.id);
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    memberNumber,
+  };
+}
 }

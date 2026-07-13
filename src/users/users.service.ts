@@ -47,4 +47,19 @@ export class UsersService {
       data,
     });
   }
+
+  async getMemberNumber(userId: string): Promise<number> {
+  const users = await this.prisma.user.findMany({
+    orderBy: {
+      createdAt: 'asc',
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const index = users.findIndex((u) => u.id === userId);
+
+  return index >= 0 ? index + 1 : 0;
+}
 }
