@@ -34,6 +34,8 @@ export class AuthService {
       password,
     });
 
+    const memberNumber = await this.usersService.getMemberNumber(user.id);
+
     const token = this.jwtService.sign({
       sub: user.id,
       email: user.email,
@@ -45,6 +47,7 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
+        memberNumber,
       },
     };
   }
@@ -62,6 +65,8 @@ export class AuthService {
       throw new UnauthorizedException('Email o contraseña incorrectos');
     }
 
+    const memberNumber = await this.usersService.getMemberNumber(user.id);
+
     const token = this.jwtService.sign({
       sub: user.id,
       email: user.email,
@@ -73,24 +78,25 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
+        memberNumber,
       },
     };
   }
 
   async me(userId: string) {
-  const user = await this.usersService.findById(userId);
+    const user = await this.usersService.findById(userId);
 
-  if (!user) {
-    return null;
+    if (!user) {
+      return null;
+    }
+
+    const memberNumber = await this.usersService.getMemberNumber(user.id);
+
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      memberNumber,
+    };
   }
-
-  const memberNumber = await this.usersService.getMemberNumber(user.id);
-
-  return {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    memberNumber,
-  };
-}
 }
