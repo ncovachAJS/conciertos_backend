@@ -1,4 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePhotoDto } from './dto/create-photo.dto';
@@ -9,48 +13,100 @@ export class PhotosService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  create(concertId: string, dto: CreatePhotoDto) {
-    return this.prisma.concertPhoto.create({
-      data: {
-        concertId,
-        imageUrl: dto.imageUrl,
-        caption: dto.caption ?? null,
-      },
-    });
+  async create(
+  userId: string,
+  concertId: string,
+  dto: CreatePhotoDto,
+) {
+  const concert = await this.prisma.concert.findFirst({
+    where: {
+      id: concertId,
+      userId,
+    },
+  });
+
+  if (!concert) {
+    throw new NotFoundException('Concierto no encontrado');
   }
 
-  findByConcert(concertId: string) {
-    return this.prisma.concertPhoto.findMany({
-      where: { concertId },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
+  return this.prisma.concertPhoto.create({
+    data: {
+      concertId,
+      imageUrl: dto.imageUrl,
+      caption: dto.caption ?? null,
+    },
+  });
+}
+
+  async findByConcert(
+  userId: string,
+  concertId: string,
+) {
+  return this.prisma.concertPhoto.findMany({
+    where: {
+      concertId,
+      concert: {
+        userId,
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
 
   /** Feed global: todas las fotos, más recientes primero, con datos del concierto. */
-  feed() {
-    return this.prisma.concertPhoto.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        concert: {
-          select: {
-            id: true,
-            name: true,
-            artist: true,
-            festival: true,
-            city: true,
-            venue: true,
-            date: true,
-          },
+  feed(userId: string) {
+  return this.prisma.concertPhoto.findMany({
+    where: {
+      concert: {
+        userId,
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+    include: {
+      concert: {
+        select: {
+          id: true,
+          name: true,
+          artist: true,
+          festival: true,
+          city: true,
+          venue: true,
+          date: true,
         },
       },
-    });
+    },
+  });
+}
+
+ async remove(
+  userId: string,
+  id: string,
+) {
+  const photo = await this.prisma.concertPhoto.findFirst({
+    where: {
+      id,
+      concert: {
+        userId,
+      },
+    },
+  });
+
+  if (!photo) {
+    throw new NotFoundException('Foto no encontrada');
   }
 
-  async remove(id: string) {
-    const photo = await this.prisma.concertPhoto.delete({ where: { id } });
+  await this.prisma.concertPhoto.delete({
+    where: {
+      id,
+    },
+  });
 
-    this.logger.log(`Foto eliminada: ${photo.id}`);
+  this.logger.log(`Foto eliminada: ${id}`);
 
-    return photo;
-  }
+  return photo;
+}
 }
