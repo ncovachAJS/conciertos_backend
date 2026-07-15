@@ -2,40 +2,42 @@ import {
   Controller,
   Post,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-
-import { ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
-
 import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UploadsService } from './uploads.service';
 
+@ApiBearerAuth('JWT')
+@UseGuards(JwtAuthGuard)
+@ApiTags('Uploads')
 @Controller('uploads')
 export class UploadsController {
   constructor(private readonly uploadsService: UploadsService) {}
 
-  @ApiOperation({
-    summary: 'Subir una imagen',
-  })
+  @Post('image')
+  @ApiOperation({ summary: 'Sube una imagen a Cloudinary' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
-      properties: {
-        file: {
-          type: 'string',
-          format: 'binary',
-        },
-      },
+      properties: { file: { type: 'string', format: 'binary' } },
     },
   })
-  @Post('image')
+  @ApiResponse({ status: 201, description: 'URL de la imagen subida.' })
   @UseInterceptors(FileInterceptor('file'))
   async uploadImage(@UploadedFile() file: any) {
-    console.log('🔥 Entró en uploadImage');
-    return {
-      imageUrl: await this.uploadsService.uploadImage(file),
-    };
+    const url = await this.uploadsService.uploadImage(file);
+    return { url };
   }
 }

@@ -11,6 +11,7 @@ export class UploadsService {
       api_key: process.env.CLOUDINARY_API_KEY,
       api_secret: process.env.CLOUDINARY_API_SECRET,
     });
+
     this.logger.log(
       `Cloudinary configurado para: ${process.env.CLOUDINARY_CLOUD_NAME}`,
     );
@@ -21,22 +22,14 @@ export class UploadsService {
 
     return new Promise((resolve, reject) => {
       cloudinary.uploader
-        .upload_stream(
-          {
-            folder: 'conciertos',
-          },
-          (error, result) => {
-            if (error) {
-              this.logger.error(
-                'Error al subir imagen a Cloudinary',
-                error.message,
-              );
-              return reject(error);
-            }
-            this.logger.debug(`Imagen subida: ${result!.secure_url}`);
-            resolve(result!.secure_url);
-          },
-        )
+        .upload_stream({ folder: 'conciertos' }, (error, result) => {
+          if (error) {
+            this.logger.error('Error al subir imagen a Cloudinary', error.message);
+            return reject(error);
+          }
+          this.logger.debug(`Imagen subida: ${result!.secure_url}`);
+          resolve(result!.secure_url);
+        })
         .end(file.buffer);
     });
   }
