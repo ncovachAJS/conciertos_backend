@@ -10,15 +10,29 @@ export class ConcertsService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(userId: string) {
-    return this.prisma.concert.findMany({
-      where: {
-        userId,
+  async findAll(userId: string, pagination: { page: number; limit: number }) {
+    const { page = 1, limit = 50 } = pagination;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.concert.findMany({
+        where: { userId },
+        orderBy: { date: 'desc' }, // consistente con el orden que usaba el front
+        skip,
+        take: limit,
+      }),
+      this.prisma.concert.count({ where: { userId } }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: {
-        date: 'asc',
-      },
-    });
+    };
   }
 
   async create(userId: string, dto: CreateConcertDto) {
@@ -27,38 +41,25 @@ export class ConcertsService {
         name: dto.name ?? '',
         artist: dto.artist,
         date: new Date(dto.date),
-
         festival: dto.festival ?? '',
         venue: dto.venue ?? '',
         city: dto.city ?? '',
-
         description: dto.description ?? '',
         imageUrl: dto.imageUrl ?? '',
-
         rating: dto.rating ?? 0,
         liked: dto.liked ?? false,
-
         favorite: dto.favorite ?? false,
-
-        user: {
-          connect: {
-            id: userId,
-          },
-        },
+        user: { connect: { id: userId } },
       },
     });
 
     this.logger.log(`Concierto creado: ${concert.name} (${concert.id})`);
-
     return concert;
   }
 
   async update(userId: string, id: string, dto: UpdateConcertDto) {
     const concert = await this.prisma.concert.update({
-      where: {
-        id,
-        userId,
-      },
+      where: { id, userId },
       data: {
         ...dto,
         date: dto.date ? new Date(dto.date) : undefined,
@@ -66,20 +67,15 @@ export class ConcertsService {
     });
 
     this.logger.log(`Concierto actualizado: ${concert.name} (${concert.id})`);
-
     return concert;
   }
 
   async remove(userId: string, id: string) {
     const concert = await this.prisma.concert.delete({
-      where: {
-        id,
-        userId,
-      },
+      where: { id, userId },
     });
 
     this.logger.log(`Concierto eliminado: ${concert.name} (${concert.id})`);
-
     return concert;
   }
 }

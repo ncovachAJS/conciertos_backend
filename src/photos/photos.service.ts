@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePhotoDto } from './dto/create-photo.dto';
@@ -13,100 +9,84 @@ export class PhotosService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-  userId: string,
-  concertId: string,
-  dto: CreatePhotoDto,
-) {
-  const concert = await this.prisma.concert.findFirst({
-    where: {
-      id: concertId,
-      userId,
-    },
-  });
+  async create(userId: string, concertId: string, dto: CreatePhotoDto) {
+    const concert = await this.prisma.concert.findFirst({
+      where: { id: concertId, userId },
+    });
 
-  if (!concert) {
-    throw new NotFoundException('Concierto no encontrado');
+    if (!concert) {
+      throw new NotFoundException('Concierto no encontrado');
+    }
+
+    return this.prisma.concertPhoto.create({
+      data: {
+        concertId,
+        imageUrl: dto.imageUrl,
+        caption: dto.caption ?? null,
+      },
+    });
   }
 
-  return this.prisma.concertPhoto.create({
-    data: {
-      concertId,
-      imageUrl: dto.imageUrl,
-      caption: dto.caption ?? null,
-    },
-  });
-}
+  async findByConcert(userId: string, concertId: string) {
+    return this.prisma.concertPhoto.findMany({
+      where: { concertId, concert: { userId } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
 
-  async findByConcert(
-  userId: string,
-  concertId: string,
-) {
-  return this.prisma.concertPhoto.findMany({
-    where: {
-      concertId,
-      concert: {
-        userId,
-      },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-}
+  /** Feed paginado: fotos más recientes primero con datos del concierto. */
+  async feed(userId: string, pagination: { page: number; limit: number }) {
+    const { page = 1, limit = 50 } = pagination;
+    const skip = (page - 1) * limit;
 
-  /** Feed global: todas las fotos, más recientes primero, con datos del concierto. */
-  feed(userId: string) {
-  return this.prisma.concertPhoto.findMany({
-    where: {
-      concert: {
-        userId,
-      },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-    include: {
-      concert: {
-        select: {
-          id: true,
-          name: true,
-          artist: true,
-          festival: true,
-          city: true,
-          venue: true,
-          date: true,
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.concertPhoto.findMany({
+        where: { concert: { userId } },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: {
+          concert: {
+            select: {
+              id: true,
+              name: true,
+              artist: true,
+              festival: true,
+              city: true,
+              venue: true,
+              date: true,
+            },
+          },
         },
-      },
-    },
-  });
-}
+      }),
+      this.prisma.concertPhoto.count({
+        where: { concert: { userId } },
+      }),
+    ]);
 
- async remove(
-  userId: string,
-  id: string,
-) {
-  const photo = await this.prisma.concertPhoto.findFirst({
-    where: {
-      id,
-      concert: {
-        userId,
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-    },
-  });
-
-  if (!photo) {
-    throw new NotFoundException('Foto no encontrada');
+    };
   }
 
-  await this.prisma.concertPhoto.delete({
-    where: {
-      id,
-    },
-  });
+  async remove(userId: string, id: string) {
+    const photo = await this.prisma.concertPhoto.findFirst({
+      where: { id, concert: { userId } },
+    });
 
-  this.logger.log(`Foto eliminada: ${id}`);
+    if (!photo) {
+      throw new NotFoundException('Foto no encontrada');
+    }
 
-  return photo;
-}
+    await this.prisma.concertPhoto.delete({ where: { id } });
+
+    this.logger.log(`Foto eliminada: ${id}`);
+    return photo;
+  }
 }
