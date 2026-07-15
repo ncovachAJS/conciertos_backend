@@ -36,9 +36,7 @@ console.log(JSON.stringify(artist, null, 2));
       id: artist.id,
       name: artist.name,
       url: artist.external_urls.spotify,
-      image: artist.images?.isNotEmpty == true
-    ? artist.images.first.url
-    : null,
+      image: (artist.images?.length ?? 0) > 0 ? artist.images[0].url : null,
       followers: artist.followers?.total ?? 0,
       genres: artist.genres,
     };

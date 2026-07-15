@@ -1,21 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 
 @Injectable()
 export class UploadsService {
+  private readonly logger = new Logger(UploadsService.name);
+
   constructor() {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
       api_key: process.env.CLOUDINARY_API_KEY,
       api_secret: process.env.CLOUDINARY_API_SECRET,
     });
-    console.log('Cloud name:', process.env.CLOUDINARY_CLOUD_NAME);
-    console.log('API key:', process.env.CLOUDINARY_API_KEY);
-    console.log('API secret existe:', !!process.env.CLOUDINARY_API_SECRET);
+    this.logger.log(
+      `Cloudinary configurado para: ${process.env.CLOUDINARY_CLOUD_NAME}`,
+    );
   }
 
   async uploadImage(file: any): Promise<string> {
-    console.log('📸 Archivo recibido:', !!file);
+    this.logger.debug('Procesando subida de imagen');
 
     return new Promise((resolve, reject) => {
       cloudinary.uploader
@@ -24,14 +26,14 @@ export class UploadsService {
             folder: 'conciertos',
           },
           (error, result) => {
-            console.log('❌ Cloudinary error:', error);
-            console.log('✅ Cloudinary result:', result);
-
             if (error) {
-              console.error(error);
+              this.logger.error(
+                'Error al subir imagen a Cloudinary',
+                error.message,
+              );
               return reject(error);
             }
-
+            this.logger.debug(`Imagen subida: ${result!.secure_url}`);
             resolve(result!.secure_url);
           },
         )

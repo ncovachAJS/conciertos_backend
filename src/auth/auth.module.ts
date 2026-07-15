@@ -15,7 +15,7 @@ import { AuthService } from './auth.service';
     UsersModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'la-vida-en-directo',
+      secret: process.env.JWT_SECRET!,
       signOptions: {
         expiresIn: '30d',
       },

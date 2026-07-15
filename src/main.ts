@@ -7,9 +7,16 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('❌ JWT_SECRET no definida en las variables de entorno');
+  }
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors();
+  app.enableCors({
+    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true,
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({
