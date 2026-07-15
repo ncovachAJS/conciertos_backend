@@ -48,6 +48,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         memberNumber,
+        avatarUrl: user.avatarUrl,
       },
     };
   }
@@ -79,6 +80,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         memberNumber,
+        avatarUrl: user.avatarUrl,
       },
     };
   }
@@ -97,6 +99,7 @@ export class AuthService {
       name: user.name,
       email: user.email,
       memberNumber,
+      avatarUrl: user.avatarUrl,
     };
   }
 }
