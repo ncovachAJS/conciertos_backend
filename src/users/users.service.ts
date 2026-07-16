@@ -25,55 +25,22 @@ export class UsersService {
     return this.prisma.user.create({ data });
   }
 
-  /**
-   * Calcula el número de socio contando cuántos usuarios se registraron
-   * antes o al mismo tiempo que el usuario dado.
-   *
-   * ❌ Antes: cargaba TODOS los usuarios en memoria para hacer indexOf.
-   * ✅ Ahora: dos queries O(1) — un findUnique + un COUNT con WHERE.
-   */
+  async updateAvatar(userId: string, avatarUrl: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl },
+      select: { id: true, name: true, email: true, avatarUrl: true },
+    });
+  }
+
   async getMemberNumber(userId: string): Promise<number> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { createdAt: true },
     });
-
     if (!user) return 0;
-
-    const count = await this.prisma.user.count({
+    return this.prisma.user.count({
       where: { createdAt: { lte: user.createdAt } },
-    });
-
-    return count;
-  }
-
-  async updateAvatar(userId: string, avatarUrl: string) {
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        avatarUrl,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        avatarUrl: true,
-      },
-    });
-  }
-
-  async removeAvatar(userId: string) {
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: {
-        avatarUrl: null,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        avatarUrl: true,
-      },
     });
   }
 }

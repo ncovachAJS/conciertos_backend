@@ -47,8 +47,8 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
+        avatarUrl: user.avatarUrl ?? null,
         memberNumber,
-        avatarUrl: user.avatarUrl,
       },
     };
   }
@@ -79,8 +79,8 @@ export class AuthService {
         id: user.id,
         name: user.name,
         email: user.email,
+        avatarUrl: user.avatarUrl ?? null,
         memberNumber,
-        avatarUrl: user.avatarUrl,
       },
     };
   }
@@ -88,9 +88,7 @@ export class AuthService {
   async me(userId: string) {
     const user = await this.usersService.findById(userId);
 
-    if (!user) {
-      return null;
-    }
+    if (!user) return null;
 
     const memberNumber = await this.usersService.getMemberNumber(user.id);
 
@@ -98,8 +96,8 @@ export class AuthService {
       id: user.id,
       name: user.name,
       email: user.email,
+      avatarUrl: user.avatarUrl ?? null,
       memberNumber,
-      avatarUrl: user.avatarUrl,
     };
   }
 }
