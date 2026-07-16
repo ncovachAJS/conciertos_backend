@@ -46,7 +46,11 @@ export class PhotosService {
     const [data, total] = await this.prisma.$transaction([
       this.prisma.concertPhoto.findMany({
         where: { concert: { userId } },
-        orderBy: { createdAt: 'desc' },
+        orderBy: {
+          concert: {
+            date: 'desc',
+          },
+        },
         skip,
         take: limit,
         include: {
