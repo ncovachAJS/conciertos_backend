@@ -30,7 +30,11 @@ export class PhotosService {
   async findByConcert(userId: string, concertId: string) {
     return this.prisma.concertPhoto.findMany({
       where: { concertId, concert: { userId } },
-      orderBy: { createdAt: 'desc' },
+      orderBy: {
+        concert: {
+          date: 'desc',
+        },
+      },
     });
   }
 
