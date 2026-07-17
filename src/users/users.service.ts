@@ -33,6 +33,22 @@ export class UsersService {
     });
   }
 
+  async updateName(userId: string, name: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { name },
+      select: { id: true, name: true, email: true, avatarUrl: true },
+    });
+  }
+
+  async updatePassword(userId: string, hashedPassword: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+      select: { id: true },
+    });
+  }
+
   async getMemberNumber(userId: string): Promise<number> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
