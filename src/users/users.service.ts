@@ -21,6 +21,10 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
+  async findByResetToken(token: string) {
+    return this.prisma.user.findFirst({ where: { resetToken: token } });
+  }
+
   async create(data: { name: string; email: string; password: string }) {
     return this.prisma.user.create({ data });
   }
@@ -46,6 +50,20 @@ export class UsersService {
       where: { id: userId },
       data: { password: hashedPassword },
       select: { id: true },
+    });
+  }
+
+  async setResetToken(userId: string, token: string, expiry: Date) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { resetToken: token, resetTokenExpiry: expiry },
+    });
+  }
+
+  async clearResetToken(userId: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { resetToken: null, resetTokenExpiry: null },
     });
   }
 
