@@ -68,6 +68,7 @@ export class ConcertsService {
   }
 
   async create(userId: string, dto: CreateConcertDto) {
+    this.logger.log(`DTO recibido: ${JSON.stringify(dto)}`);
     const concert = await this.prisma.concert.create({
       data: {
         name: dto.name ?? '',
