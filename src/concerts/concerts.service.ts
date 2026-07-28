@@ -34,7 +34,6 @@ export class ConcertsService {
     const { page = 1, limit = 50 } = pagination;
     const skip = (page - 1) * limit;
 
-    // Devolvemos los propios + los en los que está etiquetado
     const [data, total] = await this.prisma.$transaction([
       this.prisma.concert.findMany({
         where: {
@@ -58,8 +57,23 @@ export class ConcertsService {
       }),
     ]);
 
+    // Deduplicar: si hay un concierto propio y uno compartido del mismo artista+fecha,
+    // quedarse solo con el propio
+    const seen = new Map<string, boolean>();
+    const deduped = data.filter((concert) => {
+      const date = concert.date;
+      const key = `${concert.artist.toLowerCase()}|${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+      const isOwn = concert.userId === userId;
+      if (isOwn) {
+        seen.set(key, true);
+        return true;
+      }
+      // Si ya hay un concierto propio con la misma clave, descartar éste
+      return !seen.has(key);
+    });
+
     return {
-      data,
+      data: deduped,
       meta: {
         total,
         page,

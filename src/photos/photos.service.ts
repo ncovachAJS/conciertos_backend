@@ -48,9 +48,35 @@ export class PhotosService {
     });
     if (!concert) throw new NotFoundException('Concierto no encontrado');
 
+    // Buscar conciertos del mismo artista y fecha (pueden ser de otros usuarios)
+    const sameDay = new Date(concert.date);
+    sameDay.setHours(0, 0, 0, 0);
+    const nextDay = new Date(sameDay);
+    nextDay.setDate(nextDay.getDate() + 1);
+
+    const relatedConcerts = await this.prisma.concert.findMany({
+      where: {
+        artist: { equals: concert.artist, mode: 'insensitive' },
+        date: { gte: sameDay, lt: nextDay },
+        id: { not: concertId },
+      },
+      select: { id: true },
+    });
+
+    const allConcertIds = [concertId, ...relatedConcerts.map(c => c.id)];
+
+    // Fotos propias del concierto + fotos de conciertos relacionados donde está etiquetado
     return this.prisma.concertPhoto.findMany({
-      where: { concertId },
+      where: {
+        concertId: { in: allConcertIds },
+        OR: [
+          { userId },
+          { userId: null, concert: { userId } },
+          { participants: { some: { userId } } },
+        ],
+      },
       orderBy: { createdAt: 'desc' },
+      distinct: ['id'],
       include: {
         user: { select: { id: true, name: true, avatarUrl: true } },
         participants: { select: PARTICIPANT_SELECT },
@@ -76,6 +102,7 @@ export class PhotosService {
         orderBy: { concert: { date: 'desc' } },
         skip,
         take: limit,
+        distinct: ['id'],
         include: {
           user: { select: { id: true, name: true, avatarUrl: true } },
           participants: { select: PARTICIPANT_SELECT },
