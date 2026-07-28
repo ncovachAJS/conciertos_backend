@@ -63,9 +63,10 @@ export class PhotosService {
     const skip = (page - 1) * limit;
 
     const where = {
-      concert: {
-        OR: [{ userId }, { participants: { some: { userId } } }],
-      },
+      OR: [
+        { userId },                                        // fotos que subió él
+        { participants: { some: { userId } } },            // fotos donde está etiquetado
+      ],
     };
 
     const [data, total] = await this.prisma.$transaction([
