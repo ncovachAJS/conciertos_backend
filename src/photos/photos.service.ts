@@ -107,9 +107,17 @@ export class PhotosService {
     const areFriends = await this.friendsService.areFriends(uploaderId, friendId);
     if (!areFriends) throw new ForbiddenException('Solo puedes etiquetar a tus amigos');
 
+    // Etiquetar en la foto
     await this.prisma.photoParticipant.upsert({
       where: { photoId_userId: { photoId, userId: friendId } },
       create: { photoId, userId: friendId },
+      update: {},
+    });
+
+    // Auto-añadir como participante del concierto si no lo está ya
+    await this.prisma.concertParticipant.upsert({
+      where: { concertId_userId: { concertId: photo.concertId, userId: friendId } },
+      create: { concertId: photo.concertId, userId: friendId },
       update: {},
     });
 
@@ -137,13 +145,25 @@ export class PhotosService {
   }
 
   private async _tagFriends(uploaderId: string, photoId: string, friendIds: string[]) {
+    const photo = await this.prisma.concertPhoto.findUnique({ where: { id: photoId } });
+    if (!photo) return;
+
     for (const friendId of friendIds) {
       if (friendId === uploaderId) continue;
       const ok = await this.friendsService.areFriends(uploaderId, friendId);
       if (!ok) continue;
+
+      // Etiquetar en la foto
       await this.prisma.photoParticipant.upsert({
         where: { photoId_userId: { photoId, userId: friendId } },
         create: { photoId, userId: friendId },
+        update: {},
+      });
+
+      // Auto-añadir como participante del concierto
+      await this.prisma.concertParticipant.upsert({
+        where: { concertId_userId: { concertId: photo.concertId, userId: friendId } },
+        create: { concertId: photo.concertId, userId: friendId },
         update: {},
       });
     }
