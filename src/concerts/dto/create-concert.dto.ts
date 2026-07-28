@@ -13,15 +13,15 @@ import {
 export class CreateConcertDto {
   @ApiProperty({ example: 'Metallica en Madrid' })
   @IsString()
-  name: string;
+  name!: string;
 
   @ApiProperty({ example: 'Metallica' })
   @IsString()
-  artist: string;
+  artist!: string;
 
   @ApiProperty({ example: '2026-09-20T20:00:00.000Z' })
   @IsDateString()
-  date: string;
+  date!: string;
 
   @ApiPropertyOptional({ example: 'Wizink Center' })
   @IsOptional()
