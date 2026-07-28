@@ -11,9 +11,13 @@ import { FriendsService } from '../friends/friends.service';
 import { CreateConcertDto } from './dto/create-concert.dto';
 import { UpdateConcertDto } from './dto/update-concert.dto';
 
-// Campos de participante que se devuelven siempre
 const PARTICIPANT_SELECT = {
   id: true,
+  user: { select: { id: true, name: true, avatarUrl: true } },
+};
+
+const CONCERT_INCLUDE = {
+  participants: { select: PARTICIPANT_SELECT },
   user: { select: { id: true, name: true, avatarUrl: true } },
 };
 
@@ -42,9 +46,7 @@ export class ConcertsService {
         orderBy: { date: 'desc' },
         skip,
         take: limit,
-        include: {
-          participants: { select: PARTICIPANT_SELECT },
-        },
+        include: CONCERT_INCLUDE,
       }),
       this.prisma.concert.count({
         where: {
@@ -84,7 +86,7 @@ export class ConcertsService {
         favorite: dto.favorite ?? false,
         user: { connect: { id: userId } },
       },
-      include: { participants: { select: PARTICIPANT_SELECT } },
+      include: CONCERT_INCLUDE,
     });
 
     // Etiquetar amigos si vienen en el DTO
@@ -109,7 +111,7 @@ export class ConcertsService {
         ...concertData,
         date: concertData.date ? new Date(concertData.date) : undefined,
       },
-      include: { participants: { select: PARTICIPANT_SELECT } },
+      include: CONCERT_INCLUDE,
     });
 
     // Si viene lista de etiquetados, sincronizamos
@@ -178,7 +180,7 @@ export class ConcertsService {
   private async findOne(concertId: string) {
     return this.prisma.concert.findUnique({
       where: { id: concertId },
-      include: { participants: { select: PARTICIPANT_SELECT } },
+      include: CONCERT_INCLUDE,
     });
   }
 
