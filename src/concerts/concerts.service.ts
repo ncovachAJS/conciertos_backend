@@ -1,27 +1,59 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { FriendsService } from '../friends/friends.service';
 import { CreateConcertDto } from './dto/create-concert.dto';
 import { UpdateConcertDto } from './dto/update-concert.dto';
+
+// Campos de participante que se devuelven siempre
+const PARTICIPANT_SELECT = {
+  id: true,
+  user: { select: { id: true, name: true, avatarUrl: true } },
+};
 
 @Injectable()
 export class ConcertsService {
   private readonly logger = new Logger(ConcertsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly friendsService: FriendsService,
+  ) {}
 
   async findAll(userId: string, pagination: { page: number; limit: number }) {
     const { page = 1, limit = 50 } = pagination;
     const skip = (page - 1) * limit;
 
+    // Devolvemos los propios + los en los que está etiquetado
     const [data, total] = await this.prisma.$transaction([
       this.prisma.concert.findMany({
-        where: { userId },
-        orderBy: { date: 'desc' }, // consistente con el orden que usaba el front
+        where: {
+          OR: [
+            { userId },
+            { participants: { some: { userId } } },
+          ],
+        },
+        orderBy: { date: 'desc' },
         skip,
         take: limit,
+        include: {
+          participants: { select: PARTICIPANT_SELECT },
+        },
       }),
-      this.prisma.concert.count({ where: { userId } }),
+      this.prisma.concert.count({
+        where: {
+          OR: [
+            { userId },
+            { participants: { some: { userId } } },
+          ],
+        },
+      }),
     ]);
 
     return {
@@ -51,31 +83,119 @@ export class ConcertsService {
         favorite: dto.favorite ?? false,
         user: { connect: { id: userId } },
       },
+      include: { participants: { select: PARTICIPANT_SELECT } },
     });
 
+    // Etiquetar amigos si vienen en el DTO
+    if (dto.taggedFriendIds?.length) {
+      await this._tagFriends(userId, concert.id, dto.taggedFriendIds);
+    }
+
     this.logger.log(`Concierto creado: ${concert.name} (${concert.id})`);
-    return concert;
+    return this.findOne(concert.id);
   }
 
   async update(userId: string, id: string, dto: UpdateConcertDto) {
-    const concert = await this.prisma.concert.update({
-      where: { id, userId },
+    // Solo el dueño puede editar
+    const concert = await this.prisma.concert.findFirst({ where: { id, userId } });
+    if (!concert) throw new NotFoundException('Concierto no encontrado');
+
+    const { taggedFriendIds, ...concertData } = dto;
+
+    const updated = await this.prisma.concert.update({
+      where: { id },
       data: {
-        ...dto,
-        date: dto.date ? new Date(dto.date) : undefined,
+        ...concertData,
+        date: concertData.date ? new Date(concertData.date) : undefined,
       },
+      include: { participants: { select: PARTICIPANT_SELECT } },
     });
 
-    this.logger.log(`Concierto actualizado: ${concert.name} (${concert.id})`);
-    return concert;
+    // Si viene lista de etiquetados, sincronizamos
+    if (dto.taggedFriendIds !== undefined) {
+      // Eliminar todos los existentes y volver a crear
+      await this.prisma.concertParticipant.deleteMany({ where: { concertId: id } });
+      if (dto.taggedFriendIds.length) {
+        await this._tagFriends(userId, id, dto.taggedFriendIds);
+      }
+    }
+
+    this.logger.log(`Concierto actualizado: ${updated.name} (${updated.id})`);
+    return this.findOne(id);
   }
 
   async remove(userId: string, id: string) {
-    const concert = await this.prisma.concert.delete({
-      where: { id, userId },
-    });
+    const concert = await this.prisma.concert.findFirst({ where: { id, userId } });
+    if (!concert) throw new NotFoundException('Concierto no encontrado');
 
+    await this.prisma.concert.delete({ where: { id } });
     this.logger.log(`Concierto eliminado: ${concert.name} (${concert.id})`);
     return concert;
+  }
+
+  // ── Etiquetado ───────────────────────────────────────────────────────────
+
+  async tagFriend(ownerId: string, concertId: string, friendId: string) {
+    const concert = await this.prisma.concert.findFirst({
+      where: { id: concertId, userId: ownerId },
+    });
+    if (!concert) throw new NotFoundException('Concierto no encontrado');
+
+    const areFriends = await this.friendsService.areFriends(ownerId, friendId);
+    if (!areFriends) {
+      throw new ForbiddenException('Solo puedes etiquetar a tus amigos');
+    }
+
+    if (friendId === ownerId) {
+      throw new BadRequestException('No puedes etiquetarte a ti mismo');
+    }
+
+    await this.prisma.concertParticipant.upsert({
+      where: { concertId_userId: { concertId, userId: friendId } },
+      create: { concertId, userId: friendId },
+      update: {},
+    });
+
+    return this.findOne(concertId);
+  }
+
+  async untagFriend(ownerId: string, concertId: string, friendId: string) {
+    const concert = await this.prisma.concert.findFirst({
+      where: { id: concertId, userId: ownerId },
+    });
+    if (!concert) throw new NotFoundException('Concierto no encontrado');
+
+    await this.prisma.concertParticipant.deleteMany({
+      where: { concertId, userId: friendId },
+    });
+
+    return this.findOne(concertId);
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  private async findOne(concertId: string) {
+    return this.prisma.concert.findUnique({
+      where: { id: concertId },
+      include: { participants: { select: PARTICIPANT_SELECT } },
+    });
+  }
+
+  private async _tagFriends(
+    ownerId: string,
+    concertId: string,
+    friendIds: string[],
+  ) {
+    for (const friendId of friendIds) {
+      if (friendId === ownerId) continue;
+      const areFriends = await this.friendsService.areFriends(ownerId, friendId);
+      if (!areFriends) continue; // ignoramos silenciosamente los que no son amigos
+
+      await this.prisma.concertParticipant.upsert({
+        where: { concertId_userId: { concertId, userId: friendId } },
+        create: { concertId, userId: friendId },
+        update: {},
+      });
+    }
   }
 }

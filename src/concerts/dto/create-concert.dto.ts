@@ -1,101 +1,76 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsArray,
   IsBoolean,
   IsDateString,
   IsInt,
-  IsNotEmpty,
   IsOptional,
   IsString,
-  IsUrl,
   Max,
   Min,
 } from 'class-validator';
 
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-
 export class CreateConcertDto {
-  @ApiPropertyOptional({
-    example: 'Iron Maiden',
-    description: 'Nombre del concierto',
-  })
-  @IsOptional()
+  @ApiProperty({ example: 'Metallica en Madrid' })
   @IsString()
-  name?: string;
+  name: string;
 
-  @ApiProperty({
-    example: 'Iron Maiden',
-    description: 'Artista o banda',
-  })
+  @ApiProperty({ example: 'Metallica' })
   @IsString()
-  @IsNotEmpty()
-  artist!: string;
+  artist: string;
 
-  @ApiProperty({
-    example: '2026-07-15',
-    description: 'Fecha del concierto',
-  })
+  @ApiProperty({ example: '2026-09-20T20:00:00.000Z' })
   @IsDateString()
-  date!: string;
+  date: string;
 
-  @ApiPropertyOptional({
-    example: 'Rock Imperium',
-    description: 'Festival',
-  })
-  @IsOptional()
-  @IsString()
-  festival?: string;
-
-  @ApiPropertyOptional({
-    example: 'Parque Torres',
-    description: 'Lugar del concierto',
-  })
+  @ApiPropertyOptional({ example: 'Wizink Center' })
   @IsOptional()
   @IsString()
   venue?: string;
 
-  @ApiPropertyOptional({
-    example: 'Cartagena',
-    description: 'Ciudad donde se celebra el concierto',
-  })
+  @ApiPropertyOptional({ example: 'Madrid' })
   @IsOptional()
   @IsString()
   city?: string;
 
-  @ApiPropertyOptional({
-    example: 'Concierto de la gira mundial',
-  })
+  @ApiPropertyOptional({ example: 'Mad Cool' })
+  @IsOptional()
+  @IsString()
+  festival?: string;
+
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({
-    example: 'https://miweb.com/ironmaiden.jpg',
-  })
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsUrl()
+  @IsString()
   imageUrl?: string;
 
-  @ApiPropertyOptional({
-    example: 5,
-    minimum: 0,
-    maximum: 5,
-  })
+  @ApiPropertyOptional({ minimum: 0, maximum: 5 })
   @IsOptional()
   @IsInt()
   @Min(0)
   @Max(5)
   rating?: number;
 
-  @ApiPropertyOptional({
-    example: true,
-  })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
   liked?: boolean;
 
-  @ApiPropertyOptional({
-    example: true,
-  })
+  @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
   favorite?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'IDs de amigos a etiquetar en el concierto',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  taggedFriendIds?: string[];
 }

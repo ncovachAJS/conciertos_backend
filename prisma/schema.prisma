@@ -7,24 +7,64 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id       String @id @default(cuid())
+  name     String
+  email    String @unique
+  password String
+
+  avatarUrl String?
+
+  resetToken       String?   @unique
+  resetTokenExpiry DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  concerts     Concert[]
+  photos       ConcertPhoto[] // fotos subidas por este usuario
+
+  // Amistades
+  sentRequests     Friendship[] @relation("FriendshipSender")
+  receivedRequests Friendship[] @relation("FriendshipReceiver")
+
+  // Conciertos en los que está etiquetado
+  concertTags ConcertParticipant[]
+}
+
 model Concert {
-  id          String         @id @default(cuid())
+  id          String   @id @default(cuid())
   artist      String
   date        DateTime
   imageUrl    String?
-  rating      Int            @default(0)
-  liked       Boolean        @default(false)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  rating      Int      @default(0)
+  liked       Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   description String?
   festival    String
   name        String
   venue       String
   city        String?
-  favorite    Boolean        @default(false)
+  favorite    Boolean  @default(false)
   userId      String
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  photos      ConcertPhoto[]
+
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  photos       ConcertPhoto[]
+  participants ConcertParticipant[]
+}
+
+model ConcertParticipant {
+  id        String @id @default(cuid())
+  concertId String
+  userId    String
+
+  concert Concert @relation(fields: [concertId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([concertId, userId]) // un usuario solo puede estar una vez por concierto
+  @@index([userId])
+  @@index([concertId])
 }
 
 model ConcertPhoto {
@@ -33,24 +73,32 @@ model ConcertPhoto {
   imageUrl  String
   caption   String?
   createdAt DateTime @default(now())
-  concert   Concert  @relation(fields: [concertId], references: [id], onDelete: Cascade)
+  userId    String?  // opcional para compatibilidad con fotos existentes
+
+  concert Concert  @relation(fields: [concertId], references: [id], onDelete: Cascade)
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([concertId])
+  @@index([userId])
 }
 
-model User {
-  id       String @id @default(cuid())
-  name     String
-  email    String @unique
-  password String
+model Friendship {
+  id         String           @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     FriendshipStatus @default(PENDING)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
 
-  avatarUrl String?
-  
-  resetToken       String?   @unique    // ← añadir
-  resetTokenExpiry DateTime?            // ← añadir
+  sender   User @relation("FriendshipSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("FriendshipReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  @@unique([senderId, receiverId])
+  @@index([receiverId])
+}
 
-  concerts Concert[]
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }
