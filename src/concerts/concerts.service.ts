@@ -186,16 +186,19 @@ export class ConcertsService {
     concertId: string,
     friendIds: string[],
   ) {
+    this.logger.log(`Etiquetando amigos: ${friendIds.join(', ')} en concierto ${concertId}`);
     for (const friendId of friendIds) {
       if (friendId === ownerId) continue;
       const areFriends = await this.friendsService.areFriends(ownerId, friendId);
-      if (!areFriends) continue; // ignoramos silenciosamente los que no son amigos
+      this.logger.log(`areFriends(${ownerId}, ${friendId}) = ${areFriends}`);
+      if (!areFriends) continue;
 
       await this.prisma.concertParticipant.upsert({
         where: { concertId_userId: { concertId, userId: friendId } },
         create: { concertId, userId: friendId },
         update: {},
       });
+      this.logger.log(`✅ Etiquetado: ${friendId} en concierto ${concertId}`);
     }
   }
 }
