@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nest
 
 import { PrismaService } from '../prisma/prisma.service';
 import { FriendsService } from '../friends/friends.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreatePhotoDto } from './dto/create-photo.dto';
 
 const PARTICIPANT_SELECT = {
@@ -16,6 +17,7 @@ export class PhotosService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly friendsService: FriendsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(userId: string, concertId: string, dto: CreatePhotoDto) {
@@ -162,6 +164,14 @@ export class PhotosService {
       update: {},
     });
     this.logger.log(`✅ ConcertParticipant creado: concierto=${photo.concertId} friend=${friendId}`);
+
+    // Notificar al etiquetado
+    const concert = await this.prisma.concert.findUnique({
+      where: { id: photo.concertId },
+      select: { name: true, artist: true },
+    });
+    const concertName = concert?.name ?? concert?.artist ?? '';
+    this.notificationsService.notifyPhotoTag(uploaderId, friendId, concertName, photoId, photo.concertId).catch(() => {});
 
     return this.findOne(photoId);
   }

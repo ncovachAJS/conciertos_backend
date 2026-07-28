@@ -10,6 +10,21 @@ import { RecommendationsModule } from './recommendations/recommendations.module'
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { FriendsModule } from './friends/friends.module';
+import { NotificationsModule } from './notifications/notifications.module';
+
+/* eslint-disable @typescript-eslint/no-var-requires */
+const { initializeApp, getApps, cert } = require('firebase-admin/app');
+/* eslint-enable */
+
+if (!getApps().length) {
+  initializeApp({
+    credential: cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    }),
+  });
+}
 
 @Module({
   imports: [
@@ -23,6 +38,7 @@ import { FriendsModule } from './friends/friends.module';
     UsersModule,
     AuthModule,
     FriendsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

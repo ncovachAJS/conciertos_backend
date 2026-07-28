@@ -8,6 +8,7 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 import { FriendsService } from '../friends/friends.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateConcertDto } from './dto/create-concert.dto';
 import { UpdateConcertDto } from './dto/update-concert.dto';
 
@@ -28,6 +29,7 @@ export class ConcertsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly friendsService: FriendsService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async findAll(userId: string, pagination: { page: number; limit: number }) {
@@ -121,6 +123,10 @@ export class ConcertsService {
     }
 
     this.logger.log(`Concierto creado: ${concert.name} (${concert.id})`);
+
+    // Notificar a amigos que añadiste un concierto
+    this.notificationsService.notifyFriendConcert(userId, concert.name ?? concert.artist, concert.id).catch(() => {});
+
     return this.findOne(concert.id);
   }
 
@@ -216,6 +222,13 @@ export class ConcertsService {
     friendIds: string[],
   ) {
     this.logger.log(`Etiquetando amigos: ${friendIds.join(', ')} en concierto ${concertId}`);
+
+    const concertData = await this.prisma.concert.findUnique({
+      where: { id: concertId },
+      select: { name: true, artist: true },
+    });
+    const concertName = concertData?.name || concertData?.artist || '';
+
     for (const friendId of friendIds) {
       if (friendId === ownerId) continue;
       const areFriends = await this.friendsService.areFriends(ownerId, friendId);
@@ -228,6 +241,8 @@ export class ConcertsService {
         update: {},
       });
       this.logger.log(`✅ Etiquetado: ${friendId} en concierto ${concertId}`);
+
+      this.notificationsService.notifyConcertTag(ownerId, friendId, concertName, concertId).catch(() => {});
     }
   }
 }

@@ -31,6 +31,11 @@ model User {
   // Conciertos en los que está etiquetado
   concertTags  ConcertParticipant[]
   photoTags    PhotoParticipant[]
+
+  // Notificaciones
+  notifications         Notification[] @relation("NotificationUser")
+  sentNotifications     Notification[] @relation("NotificationSender")
+  deviceTokens          DeviceToken[]
 }
 
 model Concert {
@@ -115,4 +120,42 @@ enum FriendshipStatus {
   PENDING
   ACCEPTED
   REJECTED
+}
+
+enum NotificationType {
+  CONCERT_TAG      // te etiquetaron en un concierto
+  PHOTO_TAG        // te etiquetaron en una foto
+  FRIEND_REQUEST   // solicitud de amistad recibida
+  FRIEND_ACCEPTED  // solicitud aceptada
+  FRIEND_CONCERT   // un amigo añadió un concierto
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String           // destinatario
+  senderId  String           // quien genera la notif
+  type      NotificationType
+  title     String
+  body      String
+  read      Boolean          @default(false)
+  data      Json?            // metadata extra (concertId, photoId...)
+  createdAt DateTime         @default(now())
+
+  user   User @relation("NotificationUser",   fields: [userId],   references: [id], onDelete: Cascade)
+  sender User @relation("NotificationSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String   // 'android' | 'ios'
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

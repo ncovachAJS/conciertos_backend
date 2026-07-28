@@ -6,10 +6,14 @@ import {
 import { FriendshipStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class FriendsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   // ── Buscar usuarios por nombre o email ──────────────────────────────────
 
@@ -78,12 +82,15 @@ export class FriendsService {
     const receiver = await this.prisma.user.findUnique({ where: { id: receiverId } });
     if (!receiver) throw new NotFoundException('Usuario no encontrado');
 
-    return this.prisma.friendship.create({
+    const result = await this.prisma.friendship.create({
       data: { senderId, receiverId, status: FriendshipStatus.PENDING },
       include: {
         receiver: { select: { id: true, name: true, avatarUrl: true } },
       },
     });
+
+    this.notificationsService.notifyFriendRequest(senderId, receiverId).catch(() => {});
+    return result;
   }
 
   // ── Aceptar solicitud ────────────────────────────────────────────────────
@@ -95,13 +102,16 @@ export class FriendsService {
 
     if (!fs) throw new NotFoundException('Solicitud no encontrada');
 
-    return this.prisma.friendship.update({
+    const result = await this.prisma.friendship.update({
       where: { id: friendshipId },
       data: { status: FriendshipStatus.ACCEPTED },
       include: {
         sender: { select: { id: true, name: true, avatarUrl: true } },
       },
     });
+
+    this.notificationsService.notifyFriendAccepted(userId, result.senderId).catch(() => {});
+    return result;
   }
 
   // ── Rechazar / cancelar solicitud ────────────────────────────────────────
