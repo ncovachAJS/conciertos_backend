@@ -64,8 +64,9 @@ export class PhotosService {
 
     const where = {
       OR: [
-        { userId },                                        // fotos que subió él
-        { participants: { some: { userId } } },            // fotos donde está etiquetado
+        { userId },                                              // fotos que subió él
+        { participants: { some: { userId } } },                 // fotos donde está etiquetado
+        { userId: null, concert: { userId } },                  // fotos antiguas de sus conciertos
       ],
     };
 
