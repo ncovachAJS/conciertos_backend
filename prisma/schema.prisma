@@ -29,7 +29,8 @@ model User {
   receivedRequests Friendship[] @relation("FriendshipReceiver")
 
   // Conciertos en los que está etiquetado
-  concertTags ConcertParticipant[]
+  concertTags  ConcertParticipant[]
+  photoTags    PhotoParticipant[]
 }
 
 model Concert {
@@ -73,12 +74,25 @@ model ConcertPhoto {
   imageUrl  String
   caption   String?
   createdAt DateTime @default(now())
-  userId    String?  // opcional para compatibilidad con fotos existentes
+  userId    String?
 
-  concert Concert  @relation(fields: [concertId], references: [id], onDelete: Cascade)
-  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  concert      Concert              @relation(fields: [concertId], references: [id], onDelete: Cascade)
+  user         User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  participants PhotoParticipant[]
 
   @@index([concertId])
+  @@index([userId])
+}
+
+model PhotoParticipant {
+  id      String @id @default(cuid())
+  photoId String
+  userId  String
+
+  photo ConcertPhoto @relation(fields: [photoId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([photoId, userId])
   @@index([userId])
 }
 
