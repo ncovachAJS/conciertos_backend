@@ -60,17 +60,29 @@ export class ConcertsService {
     // Deduplicar: si hay un concierto propio y uno compartido del mismo artista+fecha,
     // quedarse solo con el propio
     const seen = new Map<string, boolean>();
-    const deduped = data.filter((concert) => {
-      const date = concert.date;
-      const key = `${concert.artist.toLowerCase()}|${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-      const isOwn = concert.userId === userId;
-      if (isOwn) {
-        seen.set(key, true);
-        return true;
-      }
-      // Si ya hay un concierto propio con la misma clave, descartar éste
-      return !seen.has(key);
-    });
+    const deduped = data
+      .filter((concert) => {
+        const date = concert.date;
+        const key = `${concert.artist.toLowerCase()}|${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+        const isOwn = concert.userId === userId;
+        if (isOwn) {
+          seen.set(key, true);
+          return true;
+        }
+        return !seen.has(key);
+      })
+      .map((concert) => {
+        // Si el concierto no es del usuario, resetear valores personales
+        if (concert.userId !== userId) {
+          return {
+            ...concert,
+            rating: 0,
+            liked: false,
+            favorite: false,
+          };
+        }
+        return concert;
+      });
 
     return {
       data: deduped,
