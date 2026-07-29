@@ -60,18 +60,20 @@ export class ConcertsService {
     ]);
 
     // Deduplicar: si hay un concierto propio y uno compartido del mismo artista+fecha,
-    // quedarse solo con el propio
-    const seen = new Map<string, boolean>();
+    // quedarse solo con el propio — PERO siempre incluir todos los IDs únicos
+    // para que las notificaciones puedan resolver el concierto por ID
+    const seen = new Map<string, string>(); // key -> concertId propio
     const deduped = data
       .filter((concert) => {
         const date = concert.date;
         const key = `${concert.artist.toLowerCase()}|${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
         const isOwn = concert.userId === userId;
         if (isOwn) {
-          seen.set(key, true);
+          seen.set(key, concert.id);
           return true;
         }
-        return !seen.has(key);
+        // Incluir siempre el concierto compartido — el frontend decide qué mostrar
+        return true;
       })
       .map((concert) => {
         // Si el concierto no es del usuario, resetear valores personales
