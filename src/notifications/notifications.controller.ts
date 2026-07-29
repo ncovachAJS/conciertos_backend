@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, Param, Post, Put, Req, UseGuards,
+  Body, Controller, Delete, Get, Param, Post, Put, Req, UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
@@ -42,6 +42,18 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Marcar todas como leídas' })
   markAllRead(@Req() req: any) {
     return this.svc.markAllRead(req.user.id);
+  }
+
+  @Delete(':id')
+  @ApiOperation({ summary: 'Eliminar una notificación' })
+  deleteOne(@Req() req: any, @Param('id') id: string) {
+    return this.svc.deleteOne(req.user.id, id);
+  }
+
+  @Delete()
+  @ApiOperation({ summary: 'Eliminar todas las notificaciones' })
+  deleteAll(@Req() req: any) {
+    return this.svc.deleteAll(req.user.id);
   }
 
   @Post('token')
