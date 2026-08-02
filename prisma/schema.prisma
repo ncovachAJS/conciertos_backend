@@ -53,6 +53,7 @@ model Concert {
   venue       String
   city        String?
   favorite    Boolean  @default(false)
+  price       Float    @default(0)
   userId      String
 
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -4,6 +4,7 @@ import {
   IsBoolean,
   IsDateString,
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Max,
@@ -64,6 +65,12 @@ export class CreateConcertDto {
   @IsOptional()
   @IsBoolean()
   favorite?: boolean;
+
+  @ApiPropertyOptional({ example: 45.50, description: 'Precio de la entrada en euros' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  price?: number;
 
   @ApiPropertyOptional({
     description: 'IDs de amigos a etiquetar en el concierto',

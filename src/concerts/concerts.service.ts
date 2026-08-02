@@ -114,6 +114,7 @@ export class ConcertsService {
         rating: dto.rating ?? 0,
         liked: dto.liked ?? false,
         favorite: dto.favorite ?? false,
+        price: dto.price ?? 0,
         user: { connect: { id: userId } },
       },
       include: CONCERT_INCLUDE,
