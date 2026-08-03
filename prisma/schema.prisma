@@ -36,6 +36,7 @@ model User {
   notifications         Notification[] @relation("NotificationUser")
   sentNotifications     Notification[] @relation("NotificationSender")
   deviceTokens          DeviceToken[]
+  wantToAttend          WantToAttend[]
 }
 
 model Concert {
@@ -147,6 +148,25 @@ model Notification {
 
   @@index([userId, read])
   @@index([userId, createdAt])
+}
+
+model WantToAttend {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String   // ID de Ticketmaster
+  artist    String
+  venue     String
+  city      String
+  country   String
+  date      DateTime
+  imageUrl  String
+  ticketUrl String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+  @@index([userId])
 }
 
 model DeviceToken {

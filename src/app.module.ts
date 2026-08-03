@@ -11,6 +11,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { FriendsModule } from './friends/friends.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { WantToAttendModule } from './want-to-attend/want-to-attend.module';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { initializeApp, getApps, cert } = require('firebase-admin/app');
@@ -39,6 +40,7 @@ if (!getApps().length) {
     AuthModule,
     FriendsModule,
     NotificationsModule,
+    WantToAttendModule,
   ],
 })
 export class AppModule {}
