@@ -1,10 +1,12 @@
+import { IsString } from 'class-validator';
+
 export class WantToAttendDto {
-  eventId: string;
-  artist: string;
-  venue: string;
-  city: string;
-  country: string;
-  date: string;
-  imageUrl: string;
-  ticketUrl: string;
+  @IsString() eventId: string;
+  @IsString() artist: string;
+  @IsString() venue: string;
+  @IsString() city: string;
+  @IsString() country: string;
+  @IsString() date: string;
+  @IsString() imageUrl: string;
+  @IsString() ticketUrl: string;
 }
