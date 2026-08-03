@@ -17,7 +17,7 @@ export class RecommendationsService {
 
     const apiKey = this.config.get<string>('TICKETMASTER_API_KEY');
 
-    const attractionId = await this.findAttractionId(artist, apiKey);
+    const attractionId = await this.findAttractionId(artist, apiKey ?? '');
 
     const params: Record<string, any> = {
       apikey: apiKey,
