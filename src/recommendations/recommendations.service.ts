@@ -5,8 +5,17 @@ import { firstValueFrom } from 'rxjs';
 
 import { RecommendationsDto } from './dto/recommendations.dto';
 
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutos
+
+interface CacheEntry {
+  data: any;
+  expiresAt: number;
+}
+
 @Injectable()
 export class RecommendationsService {
+  private readonly cache = new Map<string, CacheEntry>();
+
   constructor(
     private readonly http: HttpService,
     private readonly config: ConfigService,
@@ -14,10 +23,15 @@ export class RecommendationsService {
 
   async getRecommendations(dto: RecommendationsDto) {
     const { artist, countryCode } = dto;
+    const apiKey = this.config.get<string>('TICKETMASTER_API_KEY') ?? '';
 
-    const apiKey = this.config.get<string>('TICKETMASTER_API_KEY');
+    const cacheKey = `${artist.toLowerCase()}|${countryCode ?? ''}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
 
-    const attractionId = await this.findAttractionId(artist, apiKey ?? '');
+    const attractionId = await this.findAttractionId(artist, apiKey);
 
     const params: Record<string, any> = {
       apikey: apiKey,
@@ -39,7 +53,7 @@ export class RecommendationsService {
 
     const events = response.data._embedded?.events ?? [];
 
-    return events.map((event: any) => ({
+    const result = events.map((event: any) => ({
       id: event.id,
       artist: event.name,
       venue: event._embedded?.venues?.[0]?.name ?? '',
@@ -49,9 +63,18 @@ export class RecommendationsService {
       imageUrl: event.images?.[0]?.url ?? '',
       ticketUrl: event.url,
     }));
+
+    this.cache.set(cacheKey, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
+    return result;
   }
 
   private async findAttractionId(artist: string, apiKey: string): Promise<string | null> {
+    const cacheKey = `attraction|${artist.toLowerCase()}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.data;
+    }
+
     try {
       const response = await firstValueFrom(
         this.http.get('https://app.ticketmaster.com/discovery/v2/attractions.json', {
@@ -65,15 +88,14 @@ export class RecommendationsService {
       );
 
       const attractions: any[] = response.data._embedded?.attractions ?? [];
-
       const normalizedQuery = artist.trim().toLowerCase();
-      const exact = attractions.find(
-        (a) => a.name?.toLowerCase() === normalizedQuery,
-      );
+      const exact = attractions.find((a) => a.name?.toLowerCase() === normalizedQuery);
+      const id = (exact ?? attractions[0])?.id ?? null;
 
-      return (exact ?? attractions[0])?.id ?? null;
+      this.cache.set(cacheKey, { data: id, expiresAt: Date.now() + CACHE_TTL_MS });
+      return id;
     } catch {
       return null;
     }
-  } 
+  }
 }
