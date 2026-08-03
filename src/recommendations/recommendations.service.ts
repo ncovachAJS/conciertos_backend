@@ -75,5 +75,5 @@ export class RecommendationsService {
     } catch {
       return null;
     }
-  }
+  } 
 }
