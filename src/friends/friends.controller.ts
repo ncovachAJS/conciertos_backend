@@ -39,6 +39,12 @@ export class FriendsController {
     return this.friendsService.searchUsers(req.user.id, q);
   }
 
+  @Get(':friendId/upcoming-concerts')
+  @ApiOperation({ summary: 'Próximos conciertos propios de un amigo' })
+  getFriendUpcomingConcerts(@Req() req: any, @Param('friendId') friendId: string) {
+    return this.friendsService.getFriendUpcomingConcerts(req.user.id, friendId);
+  }
+
   @Post('request/:receiverId')
   @ApiOperation({ summary: 'Enviar solicitud de amistad' })
   sendRequest(@Req() req: any, @Param('receiverId') receiverId: string) {

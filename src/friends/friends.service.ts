@@ -162,6 +162,34 @@ export class FriendsService {
     });
   }
 
+  // ── Próximos conciertos propios de un amigo ──────────────────────────────
+
+  async getFriendUpcomingConcerts(requesterId: string, friendId: string) {
+    const friends = await this.areFriends(requesterId, friendId);
+    if (!friends) throw new Error('No sois amigos');
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return this.prisma.concert.findMany({
+      where: {
+        userId: friendId,
+        date: { gte: today },
+      },
+      orderBy: { date: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        artist: true,
+        festival: true,
+        date: true,
+        imageUrl: true,
+        venue: true,
+        city: true,
+      },
+    });
+  }
+
   // ── Verificar que dos usuarios son amigos ────────────────────────────────
 
   async areFriends(userAId: string, userBId: string): Promise<boolean> {
