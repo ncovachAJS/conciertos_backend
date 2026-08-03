@@ -39,6 +39,12 @@ export class FriendsController {
     return this.friendsService.searchUsers(req.user.id, q);
   }
 
+  @Get(':friendId/stats')
+  @ApiOperation({ summary: 'Estadísticas de un amigo para logros' })
+  getFriendStats(@Req() req: any, @Param('friendId') friendId: string) {
+    return this.friendsService.getFriendStats(req.user.id, friendId);
+  }
+
   @Get(':friendId/upcoming-concerts')
   @ApiOperation({ summary: 'Próximos conciertos propios de un amigo' })
   getFriendUpcomingConcerts(@Req() req: any, @Param('friendId') friendId: string) {

@@ -162,6 +162,34 @@ export class FriendsService {
     });
   }
 
+  // ── Estadísticas de un amigo (para logros) ──────────────────────────────
+
+  async getFriendStats(requesterId: string, friendId: string) {
+    const friends = await this.areFriends(requesterId, friendId);
+    if (!friends) throw new Error('No sois amigos');
+
+    const concerts = await this.prisma.concert.findMany({
+      where: { userId: friendId },
+      select: { artist: true, festival: true, city: true, date: true, rating: true },
+    });
+
+    const uniqueArtists = new Set(concerts.map((c) => c.artist.trim().toLowerCase()).filter(Boolean)).size;
+    const uniqueFestivals = new Set(concerts.map((c) => c.festival.trim().toLowerCase()).filter(Boolean)).size;
+    const uniqueCities = new Set(concerts.map((c) => c.city?.trim().toLowerCase()).filter(Boolean)).size;
+    const totalRated = concerts.filter((c) => c.rating > 0).length;
+    const dates = concerts.map((c) => c.date.getFullYear()).filter(Boolean);
+    const oldestYear = dates.length > 0 ? Math.min(...dates) : 0;
+
+    return {
+      totalConcerts: concerts.length,
+      uniqueArtists,
+      uniqueFestivals,
+      uniqueCities,
+      totalRated,
+      oldestYear,
+    };
+  }
+
   // ── Próximos conciertos propios de un amigo ──────────────────────────────
 
   async getFriendUpcomingConcerts(requesterId: string, friendId: string) {
