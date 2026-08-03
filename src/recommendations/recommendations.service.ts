@@ -17,20 +17,24 @@ export class RecommendationsService {
 
     const apiKey = this.config.get<string>('TICKETMASTER_API_KEY');
 
+    const attractionId = await this.findAttractionId(artist, apiKey);
+
+    const params: Record<string, any> = {
+      apikey: apiKey,
+      classificationName: 'Music',
+      sort: 'date,asc',
+      size: 20,
+      ...(countryCode?.trim() ? { countryCode } : {}),
+    };
+
+    if (attractionId) {
+      params.attractionId = attractionId;
+    } else {
+      params.keyword = artist;
+    }
+
     const response = await firstValueFrom(
-      this.http.get(
-        'https://app.ticketmaster.com/discovery/v2/events.json',
-        {
-          params: {
-            apikey: apiKey,
-            keyword: artist,
-            classificationName: 'Music',
-            sort: 'date,asc',
-            size: 20,
-            ...(countryCode?.trim() ? { countryCode } : {}),
-          },
-        },
-      ),
+      this.http.get('https://app.ticketmaster.com/discovery/v2/events.json', { params }),
     );
 
     const events = response.data._embedded?.events ?? [];
@@ -45,5 +49,31 @@ export class RecommendationsService {
       imageUrl: event.images?.[0]?.url ?? '',
       ticketUrl: event.url,
     }));
+  }
+
+  private async findAttractionId(artist: string, apiKey: string): Promise<string | null> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get('https://app.ticketmaster.com/discovery/v2/attractions.json', {
+          params: {
+            apikey: apiKey,
+            keyword: artist,
+            classificationName: 'Music',
+            size: 5,
+          },
+        }),
+      );
+
+      const attractions: any[] = response.data._embedded?.attractions ?? [];
+
+      const normalizedQuery = artist.trim().toLowerCase();
+      const exact = attractions.find(
+        (a) => a.name?.toLowerCase() === normalizedQuery,
+      );
+
+      return (exact ?? attractions[0])?.id ?? null;
+    } catch {
+      return null;
+    }
   }
 }
