@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -36,8 +37,8 @@ export class UploadsController {
   })
   @ApiResponse({ status: 201, description: 'URL de la imagen subida.' })
   @UseInterceptors(FileInterceptor('file'))
-  async uploadImage(@UploadedFile() file: any) {
-    const url = await this.uploadsService.uploadImage(file);
+  async uploadImage(@Req() req: any, @UploadedFile() file: any) {
+    const url = await this.uploadsService.uploadImage(file, req.user.id);
     return { url };
   }
 }

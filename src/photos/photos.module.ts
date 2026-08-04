@@ -4,9 +4,10 @@ import { PhotosService } from './photos.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { FriendsModule } from '../friends/friends.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { UploadsModule } from '../uploads/uploads.module';
 
 @Module({
-  imports: [PrismaModule, FriendsModule, NotificationsModule],
+  imports: [PrismaModule, FriendsModule, NotificationsModule, UploadsModule],
   controllers: [PhotosController],
   providers: [PhotosService],
 })

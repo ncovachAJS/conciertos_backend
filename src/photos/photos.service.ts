@@ -3,6 +3,7 @@ import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nest
 import { PrismaService } from '../prisma/prisma.service';
 import { FriendsService } from '../friends/friends.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { UploadsService } from '../uploads/uploads.service';
 import { CreatePhotoDto } from './dto/create-photo.dto';
 
 const PARTICIPANT_SELECT = {
@@ -18,6 +19,7 @@ export class PhotosService {
     private readonly prisma: PrismaService,
     private readonly friendsService: FriendsService,
     private readonly notificationsService: NotificationsService,
+    private readonly uploadsService: UploadsService,
   ) {}
 
   async create(userId: string, concertId: string, dto: CreatePhotoDto) {
@@ -125,6 +127,8 @@ export class PhotosService {
     });
     if (!photo) throw new NotFoundException('Foto no encontrada');
     await this.prisma.concertPhoto.delete({ where: { id } });
+    // Borrar de Cloudinary en background — no bloqueamos la respuesta
+    this.uploadsService.deleteImage(photo.imageUrl).catch(() => {});
     this.logger.log(`Foto eliminada: ${id}`);
     return photo;
   }
@@ -200,24 +204,28 @@ export class PhotosService {
     const photo = await this.prisma.concertPhoto.findUnique({ where: { id: photoId } });
     if (!photo) return;
 
-    for (const friendId of friendIds) {
-      if (friendId === uploaderId) continue;
-      const ok = await this.friendsService.areFriends(uploaderId, friendId);
-      if (!ok) continue;
+    await Promise.all(
+      friendIds
+        .filter((id) => id !== uploaderId)
+        .map(async (friendId) => {
+          const ok = await this.friendsService.areFriends(uploaderId, friendId);
+          if (!ok) return;
 
-      // Etiquetar en la foto
-      await this.prisma.photoParticipant.upsert({
-        where: { photoId_userId: { photoId, userId: friendId } },
-        create: { photoId, userId: friendId },
-        update: {},
-      });
-
-      // Auto-añadir como participante del concierto
-      await this.prisma.concertParticipant.upsert({
-        where: { concertId_userId: { concertId: photo.concertId, userId: friendId } },
-        create: { concertId: photo.concertId, userId: friendId },
-        update: {},
-      });
-    }
+          await Promise.all([
+            // Etiquetar en la foto
+            this.prisma.photoParticipant.upsert({
+              where: { photoId_userId: { photoId, userId: friendId } },
+              create: { photoId, userId: friendId },
+              update: {},
+            }),
+            // Auto-añadir como participante del concierto
+            this.prisma.concertParticipant.upsert({
+              where: { concertId_userId: { concertId: photo.concertId, userId: friendId } },
+              create: { concertId: photo.concertId, userId: friendId },
+              update: {},
+            }),
+          ]);
+        }),
+    );
   }
 }
