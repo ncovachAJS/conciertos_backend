@@ -168,8 +168,15 @@ export class FriendsService {
     const friends = await this.areFriends(requesterId, friendId);
     if (!friends) throw new Error('No sois amigos');
 
+    // Incluimos conciertos propios + conciertos en los que fue etiquetado,
+    // igual que el perfil propio del usuario.
     const concerts = await this.prisma.concert.findMany({
-      where: { userId: friendId },
+      where: {
+        OR: [
+          { userId: friendId },
+          { participants: { some: { userId: friendId } } },
+        ],
+      },
       select: { artist: true, festival: true, city: true, date: true, rating: true },
     });
 
