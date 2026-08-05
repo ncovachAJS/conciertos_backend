@@ -2,7 +2,17 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+
+// application/octet-stream es el fallback que algunos clientes móviles envían
+// cuando no pueden detectar el MIME type — lo aceptamos y Cloudinary validará el contenido.
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'application/octet-stream',
+];
 
 @Injectable()
 export class UploadsService {
