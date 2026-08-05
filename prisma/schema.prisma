@@ -55,6 +55,7 @@ model Concert {
   city        String?
   favorite    Boolean  @default(false)
   price       Float    @default(0)
+  genre       String?
   userId      String
 
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)

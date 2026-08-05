@@ -110,6 +110,7 @@ export class ConcertsService {
         venue: dto.venue ?? '',
         city: dto.city ?? '',
         description: dto.description ?? '',
+        genre: dto.genre ?? '',
         imageUrl: dto.imageUrl ?? '',
         rating: dto.rating ?? 0,
         liked: dto.liked ?? false,
@@ -145,6 +146,7 @@ export class ConcertsService {
       data: {
         ...concertData,
         date: concertData.date ? new Date(concertData.date) : undefined,
+        genre: concertData.genre,
       },
       include: CONCERT_INCLUDE,
     });

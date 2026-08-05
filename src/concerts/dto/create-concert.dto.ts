@@ -72,6 +72,11 @@ export class CreateConcertDto {
   @Min(0)
   price?: number;
 
+  @ApiPropertyOptional({ example: 'Rock', description: 'Género musical del concierto' })
+  @IsOptional()
+  @IsString()
+  genre?: string;
+
   @ApiPropertyOptional({
     description: 'IDs de amigos a etiquetar en el concierto',
     type: [String],
