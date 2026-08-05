@@ -33,6 +33,23 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class ConcertsController {
   constructor(private readonly concertsService: ConcertsService) {}
 
+  @Get('friends-activity')
+  @ApiOperation({ summary: 'Feed de actividad de amigos (últimos conciertos)' })
+  @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, type: Number, example: 20 })
+  @ApiResponse({ status: 200, description: 'Feed de conciertos de amigos.' })
+  findFriendsActivity(
+    @Req() req: any,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.concertsService.findFriendsActivity(
+      req.user.id,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
+  }
+
   @Get()
   @ApiOperation({ summary: 'Obtiene los conciertos del usuario (paginado)' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })

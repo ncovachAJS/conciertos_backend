@@ -210,6 +210,51 @@ export class ConcertsService {
     return this.findOne(concertId);
   }
 
+  // ── Feed de actividad de amigos ──────────────────────────────────────────
+
+  /**
+   * Devuelve los últimos conciertos añadidos por amigos del usuario.
+   * Solo se incluyen conciertos de amigos con amistad ACCEPTED.
+   */
+  async findFriendsActivity(userId: string, page = 1, limit = 20) {
+    const skip = (page - 1) * limit;
+
+    // Obtenemos los IDs de amigos aceptados
+    const friendships = await this.prisma.friendship.findMany({
+      where: {
+        status: 'ACCEPTED',
+        OR: [{ senderId: userId }, { receiverId: userId }],
+      },
+      select: { senderId: true, receiverId: true },
+    });
+
+    const friendIds = friendships.map((f) =>
+      f.senderId === userId ? f.receiverId : f.senderId,
+    );
+
+    if (friendIds.length === 0) {
+      return { data: [], meta: { total: 0, page, limit, totalPages: 0 } };
+    }
+
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.concert.findMany({
+        where: { userId: { in: friendIds } },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+        include: CONCERT_INCLUDE,
+      }),
+      this.prisma.concert.count({
+        where: { userId: { in: friendIds } },
+      }),
+    ]);
+
+    return {
+      data,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+    };
+  }
+
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   private async findOne(concertId: string) {
