@@ -177,7 +177,10 @@ export class FriendsService {
           { participants: { some: { userId: friendId } } },
         ],
       },
-      select: { artist: true, festival: true, city: true, date: true, rating: true },
+      select: {
+        artist: true, festival: true, city: true, date: true,
+        rating: true, genre: true, favorite: true, price: true,
+      },
     });
 
     const uniqueArtists = new Set(concerts.map((c) => c.artist.trim().toLowerCase()).filter(Boolean)).size;
@@ -187,6 +190,27 @@ export class FriendsService {
     const dates = concerts.map((c) => c.date.getFullYear()).filter(Boolean);
     const oldestYear = dates.length > 0 ? Math.min(...dates) : 0;
 
+    // Géneros
+    const hasGenre = (genre: string | null, keywords: string[]) =>
+      keywords.some((k) => genre?.toLowerCase().includes(k));
+    const rockConcerts    = concerts.filter((c) => hasGenre(c.genre, ['rock', 'punk', 'grunge', 'indie'])).length;
+    const metalConcerts   = concerts.filter((c) => hasGenre(c.genre, ['metal', 'heavy', 'thrash', 'death', 'black metal'])).length;
+    const jazzConcerts    = concerts.filter((c) => hasGenre(c.genre, ['jazz', 'blues', 'soul', 'funk'])).length;
+    const urbanConcerts   = concerts.filter((c) => hasGenre(c.genre, ['hip', 'rap', 'trap', 'reggaeton', 'urban', 'r&b'])).length;
+
+    // Estrellas, favoritos, gasto
+    const fiveStarConcerts = concerts.filter((c) => c.rating >= 5).length;
+    const totalFavorites   = concerts.filter((c) => c.favorite).length;
+    const totalSpent       = concerts.reduce((sum, c) => sum + (c.price ?? 0), 0);
+
+    // Superfan — artista más repetido
+    const artistCount: Record<string, number> = {};
+    for (const c of concerts) {
+      const a = c.artist.trim().toLowerCase();
+      if (a) artistCount[a] = (artistCount[a] ?? 0) + 1;
+    }
+    const maxSameArtist = Object.values(artistCount).reduce((m, v) => Math.max(m, v), 0);
+
     return {
       totalConcerts: concerts.length,
       uniqueArtists,
@@ -194,6 +218,14 @@ export class FriendsService {
       uniqueCities,
       totalRated,
       oldestYear,
+      rockConcerts,
+      metalConcerts,
+      jazzConcerts,
+      urbanConcerts,
+      fiveStarConcerts,
+      maxSameArtist,
+      totalSpent,
+      totalFavorites,
     };
   }
 
