@@ -33,7 +33,8 @@ export class ConcertsService {
   ) {}
 
   async findAll(userId: string, pagination: { page: number; limit: number }) {
-    const { page = 1, limit = 50 } = pagination;
+    const { page = 1 } = pagination;
+    const limit = Math.min(pagination.limit ?? 50, 200); // máximo 200 por página
     const skip = (page - 1) * limit;
 
     const [data, total] = await this.prisma.$transaction([
@@ -271,27 +272,51 @@ export class ConcertsService {
     concertId: string,
     friendIds: string[],
   ) {
-    this.logger.log(`Etiquetando amigos: ${friendIds.join(', ')} en concierto ${concertId}`);
+    const candidates = friendIds.filter((id) => id !== ownerId);
+    if (!candidates.length) return;
 
-    const concertData = await this.prisma.concert.findUnique({
-      where: { id: concertId },
-      select: { name: true, artist: true },
-    });
+    this.logger.log(`Etiquetando amigos: ${candidates.join(', ')} en concierto ${concertId}`);
+
+    const [concertData, friendships] = await Promise.all([
+      this.prisma.concert.findUnique({
+        where: { id: concertId },
+        select: { name: true, artist: true },
+      }),
+      // 1 sola query para verificar todas las amistades a la vez
+      this.prisma.friendship.findMany({
+        where: {
+          status: 'ACCEPTED',
+          OR: [
+            { senderId: ownerId, receiverId: { in: candidates } },
+            { senderId: { in: candidates }, receiverId: ownerId },
+          ],
+        },
+        select: { senderId: true, receiverId: true },
+      }),
+    ]);
+
     const concertName = concertData?.name || concertData?.artist || '';
+    const confirmedFriendIds = new Set(
+      friendships.map((fs) => (fs.senderId === ownerId ? fs.receiverId : fs.senderId)),
+    );
 
-    for (const friendId of friendIds) {
-      if (friendId === ownerId) continue;
-      const areFriends = await this.friendsService.areFriends(ownerId, friendId);
-      this.logger.log(`areFriends(${ownerId}, ${friendId}) = ${areFriends}`);
-      if (!areFriends) continue;
+    const validIds = candidates.filter((id) => confirmedFriendIds.has(id));
+    if (!validIds.length) return;
 
-      await this.prisma.concertParticipant.upsert({
-        where: { concertId_userId: { concertId, userId: friendId } },
-        create: { concertId, userId: friendId },
-        update: {},
-      });
-      this.logger.log(`✅ Etiquetado: ${friendId} en concierto ${concertId}`);
+    // Upserts en paralelo
+    await Promise.all(
+      validIds.map((friendId) =>
+        this.prisma.concertParticipant.upsert({
+          where: { concertId_userId: { concertId, userId: friendId } },
+          create: { concertId, userId: friendId },
+          update: {},
+        }),
+      ),
+    );
 
+    this.logger.log(`✅ Etiquetados: ${validIds.join(', ')} en concierto ${concertId}`);
+
+    for (const friendId of validIds) {
       this.notificationsService.notifyConcertTag(ownerId, friendId, concertName, concertId).catch(() => {});
     }
   }

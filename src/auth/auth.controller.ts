@@ -55,6 +55,14 @@ export class AuthController {
   /** Página web servida desde el backend para introducir la nueva contraseña */
   @Get('reset-password-page')
   resetPage(@Query('token') token: string, @Res() res: Response) {
+    // Validar que el token solo contiene caracteres hexadecimales (64 chars).
+    // Cualquier otro valor es inválido y rechazamos antes de embeber en HTML,
+    // evitando XSS reflejado en el bloque <script>.
+    if (!token || !/^[a-f0-9]{64}$/.test(token)) {
+      res.status(400).send('Enlace inválido o expirado. Solicita uno nuevo desde la app.');
+      return;
+    }
+
     const html = `
 <!DOCTYPE html>
 <html lang="es">

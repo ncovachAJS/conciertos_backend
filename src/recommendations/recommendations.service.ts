@@ -19,7 +19,18 @@ export class RecommendationsService {
   constructor(
     private readonly http: HttpService,
     private readonly config: ConfigService,
-  ) {}
+  ) {
+    // Limpiar entradas caducadas cada 30 minutos para que el Map
+    // no crezca indefinidamente en memoria.
+    setInterval(() => this._evict(), CACHE_TTL_MS);
+  }
+
+  private _evict() {
+    const now = Date.now();
+    for (const [key, entry] of this.cache) {
+      if (entry.expiresAt <= now) this.cache.delete(key);
+    }
+  }
 
   async getRecommendations(dto: RecommendationsDto) {
     const { artist, countryCode } = dto;

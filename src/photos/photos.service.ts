@@ -89,7 +89,8 @@ export class PhotosService {
   }
 
   async feed(userId: string, pagination: { page: number; limit: number }) {
-    const { page = 1, limit = 50 } = pagination;
+    const { page = 1 } = pagination;
+    const limit = Math.min(pagination.limit ?? 50, 100); // máximo 100 por página
     const skip = (page - 1) * limit;
 
     const where = {

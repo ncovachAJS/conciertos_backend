@@ -94,19 +94,31 @@ export class NotificationsService {
       },
     });
 
-    const sender = await this._getSenderName(senderId);
+    if (!friendships.length) return;
 
-    for (const fs of friendships) {
-      const recipientId = fs.senderId === senderId ? fs.receiverId : fs.senderId;
-      await this.notify({
-        userId: recipientId,
+    const recipientIds = friendships.map((fs) =>
+      fs.senderId === senderId ? fs.receiverId : fs.senderId,
+    );
+
+    const sender = await this._getSenderName(senderId);
+    const title = '🎵 Tu amigo fue a un concierto';
+    const body = `${sender} añadió "${concertName}"`;
+
+    // 1 sola query: insertar todas las notificaciones en BD de una vez.
+    await this.prisma.notification.createMany({
+      data: recipientIds.map((userId) => ({
+        userId,
         senderId,
         type: NotificationType.FRIEND_CONCERT,
-        title: '🎵 Tu amigo fue a un concierto',
-        body: `${sender} añadió "${concertName}"`,
+        title,
+        body,
         data: { concertId },
-      });
-    }
+      })),
+      skipDuplicates: true,
+    });
+
+    // 1 sola llamada FCM: recoger todos los tokens de todos los amigos.
+    await this._sendPushToMany(recipientIds, title, body, { concertId });
   }
 
   async deleteOne(userId: string, notificationId: string) {
@@ -159,8 +171,10 @@ export class NotificationsService {
     });
   }
 
-  async removeToken(token: string) {
-    return this.prisma.deviceToken.deleteMany({ where: { token } });
+  async removeToken(token: string, userId: string) {
+    // Filtramos también por userId para que un usuario no pueda
+    // eliminar el token FCM de otro (IDOR).
+    return this.prisma.deviceToken.deleteMany({ where: { token, userId } });
   }
 
   private async _sendPush(
@@ -169,8 +183,23 @@ export class NotificationsService {
     body: string,
     data: Record<string, string>,
   ) {
+    await this._sendPushToMany([userId], title, body, data);
+  }
+
+  /**
+   * Envía una push a múltiples usuarios en una sola llamada FCM.
+   * Recoge todos los tokens de todos los userIds de una sola query.
+   */
+  private async _sendPushToMany(
+    userIds: string[],
+    title: string,
+    body: string,
+    data: Record<string, string>,
+  ) {
+    if (!userIds.length) return;
+
     const tokens = await this.prisma.deviceToken.findMany({
-      where: { userId },
+      where: { userId: { in: userIds } },
       select: { token: true },
     });
 

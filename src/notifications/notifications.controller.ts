@@ -66,7 +66,7 @@ export class NotificationsController {
   @Put('token/remove')
   @ApiOperation({ summary: 'Eliminar token FCM (logout)' })
   @ApiBody({ schema: { properties: { token: { type: 'string' } } } })
-  removeToken(@Body('token') token: string) {
-    return this.svc.removeToken(token);
+  removeToken(@Req() req: any, @Body('token') token: string) {
+    return this.svc.removeToken(token, req.user.id);
   }
 }

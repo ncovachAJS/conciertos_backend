@@ -1,8 +1,13 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RecommendationsDto } from './dto/recommendations.dto';
 import { RecommendationsService } from './recommendations.service';
 
+@ApiBearerAuth('JWT')
+@ApiTags('Recommendations')
+@UseGuards(JwtAuthGuard)
 @Controller('recommendations')
 export class RecommendationsController {
   constructor(

@@ -18,6 +18,11 @@ model User {
   resetToken       String?   @unique
   resetTokenExpiry DateTime?
 
+  // Fecha del último cambio de contraseña.
+  // La JwtStrategy rechaza tokens emitidos antes de este timestamp,
+  // lo que invalida sesiones antiguas sin necesitar una blacklist.
+  passwordChangedAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
