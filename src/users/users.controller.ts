@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Body,
   Controller,
+  Delete,
   Patch,
   Request,
   UseGuards,
@@ -91,5 +92,69 @@ export class UsersController {
     await this.usersService.updatePassword(req.user.id, hashed);
 
     return { message: 'Contraseña actualizada correctamente' };
+  }
+
+  @Patch('me/email')
+  @ApiOperation({ summary: 'Cambia el email del usuario' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', example: 'nuevo@email.com' },
+        currentPassword: { type: 'string' },
+      },
+    },
+  })
+  async updateEmail(
+    @Request() req,
+    @Body('email') email: string,
+    @Body('currentPassword') currentPassword: string,
+  ) {
+    if (!email?.trim() || !currentPassword) {
+      throw new BadRequestException('Faltan campos obligatorios');
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      throw new BadRequestException('El formato del email no es válido');
+    }
+
+    const user = await this.usersService.findById(req.user.id);
+    if (!user) throw new BadRequestException('Usuario no encontrado');
+
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) throw new BadRequestException('La contraseña actual es incorrecta');
+
+    const existing = await this.usersService.findByEmail(email.trim().toLowerCase());
+    if (existing && existing.id !== req.user.id) {
+      throw new BadRequestException('Ese email ya está registrado');
+    }
+
+    return this.usersService.updateEmail(req.user.id, email.trim().toLowerCase());
+  }
+
+  @Delete('me')
+  @ApiOperation({ summary: 'Elimina la cuenta del usuario y todos sus datos' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { currentPassword: { type: 'string' } },
+    },
+  })
+  async deleteAccount(
+    @Request() req,
+    @Body('currentPassword') currentPassword: string,
+  ) {
+    if (!currentPassword) {
+      throw new BadRequestException('Debes confirmar tu contraseña');
+    }
+
+    const user = await this.usersService.findById(req.user.id);
+    if (!user) throw new BadRequestException('Usuario no encontrado');
+
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) throw new BadRequestException('La contraseña es incorrecta');
+
+    await this.usersService.deleteAccount(req.user.id);
+    return { message: 'Cuenta eliminada correctamente' };
   }
 }

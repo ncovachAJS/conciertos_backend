@@ -67,6 +67,29 @@ export class UsersService {
     });
   }
 
+  async updateEmail(userId: string, email: string) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { email },
+      select: { id: true, name: true, email: true, avatarUrl: true },
+    });
+  }
+
+  async deleteAccount(userId: string) {
+    // Elimina el usuario; las relaciones con onDelete:Cascade se borran en cascada.
+    // Las que no lo tengan se borran primero explícitamente.
+    await this.prisma.$transaction([
+      this.prisma.notification.deleteMany({ where: { userId } }),
+      this.prisma.notification.deleteMany({ where: { senderId: userId } }),
+      this.prisma.deviceToken.deleteMany({ where: { userId } }),
+      this.prisma.friendship.deleteMany({
+        where: { OR: [{ senderId: userId }, { receiverId: userId }] },
+      }),
+      this.prisma.concert.deleteMany({ where: { userId } }),
+      this.prisma.user.delete({ where: { id: userId } }),
+    ]);
+  }
+
   async getMemberNumber(userId: string): Promise<number> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
