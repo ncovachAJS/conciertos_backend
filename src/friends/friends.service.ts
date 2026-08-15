@@ -263,8 +263,14 @@ export class FriendsService {
     const friends = await this.areFriends(requesterId, friendId);
     if (!friends) throw new Error('No sois amigos');
 
+    // Incluimos propios + compartidos (etiquetados) del amigo
     return this.prisma.concert.findMany({
-      where: { userId: friendId },
+      where: {
+        OR: [
+          { userId: friendId },
+          { participants: { some: { userId: friendId } } },
+        ],
+      },
       orderBy: { date: 'desc' },
       select: {
         id: true,
