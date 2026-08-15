@@ -56,6 +56,41 @@ export class CreateConcertDto {
   @Max(5)
   rating?: number;
 
+  @ApiPropertyOptional({ minimum: 0, maximum: 5, description: 'Valoración del sonido' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(5)
+  soundRating?: number;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 5, description: 'Valoración del ambiente' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(5)
+  atmosphereRating?: number;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 5, description: 'Valoración del setlist' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(5)
+  setlistRating?: number;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 5, description: 'Valoración del precio/valor' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(5)
+  valueRating?: number;
+
+  @ApiPropertyOptional({ minimum: 0, maximum: 5, description: 'Valoración del artista' })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(5)
+  artistRating?: number;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
