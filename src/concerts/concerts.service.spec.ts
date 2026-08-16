@@ -18,6 +18,12 @@ const mockPrisma = {
     upsert: jest.fn(),
     deleteMany: jest.fn(),
   },
+  concertComment: {
+    findMany: jest.fn(),
+    create: jest.fn(),
+    findFirst: jest.fn(),
+    delete: jest.fn(),
+  },
   friendship: { findMany: jest.fn() },
   $transaction: jest.fn(),
 };
@@ -26,6 +32,7 @@ const mockFriendsService = { areFriends: jest.fn() };
 const mockNotificationsService = {
   notifyFriendConcert: jest.fn(),
   notifyConcertTag: jest.fn(),
+  notifyConcertComment: jest.fn(),
 };
 
 describe('ConcertsService', () => {

@@ -10,6 +10,9 @@ const mockConcertsService = {
   tagFriend: jest.fn(),
   untagFriend: jest.fn(),
   findFriendsActivity: jest.fn(),
+  getComments: jest.fn(),
+  addComment: jest.fn(),
+  deleteComment: jest.fn(),
 };
 
 describe('ConcertsController', () => {
