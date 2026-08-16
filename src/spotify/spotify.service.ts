@@ -1,6 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import SpotifyWebApi from 'spotify-web-api-node';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class SpotifyService {
@@ -12,7 +14,10 @@ export class SpotifyService {
   private _accessToken: string | null = null;
   private _tokenExpiresAt = 0;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly http: HttpService,
+  ) {
     this.spotifyApi = new SpotifyWebApi({
       clientId: this.configService.get<string>('SPOTIFY_CLIENT_ID'),
       clientSecret: this.configService.get<string>('SPOTIFY_CLIENT_SECRET'),
@@ -70,9 +75,10 @@ export class SpotifyService {
 
   /**
    * Devuelve las canciones más populares de un artista (máx. 10).
-   * Usa el endpoint /artists/{id}/top-tracks que funciona con Client Credentials.
-   * La respuesta tiene el mismo shape que la API de Spotify para que el cliente
-   * pueda usar SpotifyTrack.fromJson() sin cambios.
+   *
+   * Llama directamente a la REST API de Spotify con `?market=` (no `?country=`),
+   * evitando el bug de spotify-web-api-node v5 que usa el parámetro obsoleto
+   * `country` y recibe 0 resultados en la respuesta actual de Spotify.
    */
   async getArtistTopTracks(artistId: string, market = 'ES') {
     if (!artistId?.trim()) return [];
@@ -80,9 +86,20 @@ export class SpotifyService {
     try {
       await this.authenticate();
 
-      const result = await this.spotifyApi.getArtistTopTracks(artistId.trim(), market);
+      // Llamada directa a la REST API — evita el param `country` obsoleto
+      // que usa internamente spotify-web-api-node v5.
+      const url = `https://api.spotify.com/v1/artists/${encodeURIComponent(artistId.trim())}/top-tracks`;
+      const { data } = await firstValueFrom(
+        this.http.get<{ tracks: any[] }>(url, {
+          params: { market },
+          headers: { Authorization: `Bearer ${this._accessToken}` },
+        }),
+      );
 
-      return (result.body.tracks ?? []).map((track) => ({
+      const tracks: any[] = data?.tracks ?? [];
+      this.logger.debug(`getArtistTopTracks("${artistId}") → ${tracks.length} tracks`);
+
+      return tracks.map((track) => ({
         id: track.id,
         name: track.name,
         duration_ms: track.duration_ms,
@@ -91,10 +108,10 @@ export class SpotifyService {
         popularity: track.popularity,
         external_urls: track.external_urls,
         album: {
-          name: track.album.name,
-          images: track.album.images,
+          name: track.album?.name ?? '',
+          images: track.album?.images ?? [],
         },
-        artists: track.artists.map((a) => ({ id: a.id, name: a.name })),
+        artists: (track.artists ?? []).map((a: any) => ({ id: a.id, name: a.name })),
       }));
     } catch (err: any) {
       this.logger.error(
