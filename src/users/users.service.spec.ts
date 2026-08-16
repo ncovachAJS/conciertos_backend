@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadsService } from '../uploads/uploads.service';
 
 const mockUser = {
   id: 'u1',
@@ -42,6 +43,7 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: UploadsService, useValue: { deleteImage: jest.fn().mockResolvedValue(undefined) } },
       ],
     }).compile();
     service = module.get<UsersService>(UsersService);
