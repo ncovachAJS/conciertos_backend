@@ -91,12 +91,12 @@ export class SpotifyService {
       await this.authenticate();
       const headers = { Authorization: `Bearer ${this._accessToken}` };
 
-      // 1. Álbumes del artista — sin filtro de market para máxima cobertura
+      // 1. Álbumes del artista — sin include_groups para evitar encoding de coma
       const albumsRes = await firstValueFrom(
         this.http.get<{ items: any[] }>(
           `https://api.spotify.com/v1/artists/${id}/albums`,
           {
-            params: { include_groups: 'album,single', limit: '20' },
+            params: { limit: '20' },
             headers,
           },
         ),
@@ -161,7 +161,7 @@ export class SpotifyService {
       }));
     } catch (err: any) {
       this.logger.error(
-        `getArtistTopTracks("${id}", "${market}") falló: ${err?.message ?? err}`,
+        `getArtistTopTracks("${id}") falló: ${err?.message ?? err} | body: ${JSON.stringify(err?.response?.data ?? {})}`,
       );
       return [];
     }
