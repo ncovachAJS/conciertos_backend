@@ -33,50 +33,81 @@ export class RecommendationsService {
   }
 
   async getRecommendations(dto: RecommendationsDto) {
-    const { artist, countryCode } = dto;
+    const { artists, countryCode } = dto;
     const apiKey = this.config.get<string>('TICKETMASTER_API_KEY') ?? '';
 
-    const cacheKey = `${artist.toLowerCase()}|${countryCode ?? ''}`;
-    const cached = this.cache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.data;
-    }
+    // Procesar hasta 5 artistas en paralelo para no sobrecargar la API
+    const top5 = [...new Set(artists.map((a) => a.trim()).filter(Boolean))].slice(0, 5);
 
-    const attractionId = await this.findAttractionId(artist, apiKey);
-
-    const params: Record<string, any> = {
-      apikey: apiKey,
-      classificationName: 'Music',
-      sort: 'date,asc',
-      size: 20,
-      ...(countryCode?.trim() ? { countryCode } : {}),
-    };
-
-    if (attractionId) {
-      params.attractionId = attractionId;
-    } else {
-      params.keyword = artist;
-    }
-
-    const response = await firstValueFrom(
-      this.http.get('https://app.ticketmaster.com/discovery/v2/events.json', { params }),
+    const allResults = await Promise.all(
+      top5.map((artist) => this._fetchForArtist(artist, countryCode, apiKey)),
     );
 
-    const events = response.data._embedded?.events ?? [];
+    // Aplanar, deduplicar por id y ordenar por fecha
+    const seen = new Set<string>();
+    const merged: any[] = [];
+    for (const events of allResults) {
+      for (const e of events) {
+        if (!seen.has(e.id)) {
+          seen.add(e.id);
+          merged.push(e);
+        }
+      }
+    }
 
-    const result = events.map((event: any) => ({
-      id: event.id,
-      artist: event.name,
-      venue: event._embedded?.venues?.[0]?.name ?? '',
-      city: event._embedded?.venues?.[0]?.city?.name ?? '',
-      country: event._embedded?.venues?.[0]?.country?.name ?? '',
-      date: event.dates?.start?.localDate,
-      imageUrl: event.images?.[0]?.url ?? '',
-      ticketUrl: event.url,
-    }));
+    return merged.sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+    );
+  }
 
-    this.cache.set(cacheKey, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
-    return result;
+  private async _fetchForArtist(
+    artist: string,
+    countryCode: string | undefined,
+    apiKey: string,
+  ): Promise<any[]> {
+    const cacheKey = `${artist.toLowerCase()}|${countryCode ?? ''}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.data;
+
+    try {
+      const attractionId = await this.findAttractionId(artist, apiKey);
+
+      const params: Record<string, any> = {
+        apikey: apiKey,
+        classificationName: 'Music',
+        sort: 'date,asc',
+        size: 5,
+        ...(countryCode?.trim() ? { countryCode } : {}),
+      };
+
+      if (attractionId) {
+        params.attractionId = attractionId;
+      } else {
+        params.keyword = artist;
+      }
+
+      const response = await firstValueFrom(
+        this.http.get('https://app.ticketmaster.com/discovery/v2/events.json', { params }),
+      );
+
+      const events: any[] = response.data._embedded?.events ?? [];
+      const result = events.map((event: any) => ({
+        id: event.id,
+        artist: event.name,
+        recommendedBecause: artist,
+        venue: event._embedded?.venues?.[0]?.name ?? '',
+        city: event._embedded?.venues?.[0]?.city?.name ?? '',
+        country: event._embedded?.venues?.[0]?.country?.name ?? '',
+        date: event.dates?.start?.localDate,
+        imageUrl: event.images?.[0]?.url ?? '',
+        ticketUrl: event.url,
+      }));
+
+      this.cache.set(cacheKey, { data: result, expiresAt: Date.now() + CACHE_TTL_MS });
+      return result;
+    } catch {
+      return [];
+    }
   }
 
   private async findAttractionId(artist: string, apiKey: string): Promise<string | null> {

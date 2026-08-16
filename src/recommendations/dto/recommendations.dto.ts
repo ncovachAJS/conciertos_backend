@@ -1,8 +1,9 @@
-import { IsOptional, IsString } from 'class-validator';
+import { IsArray, IsOptional, IsString } from 'class-validator';
 
 export class RecommendationsDto {
-  @IsString()
-  artist!: string;
+  @IsArray()
+  @IsString({ each: true })
+  artists!: string[];
 
   @IsOptional()
   @IsString()
