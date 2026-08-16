@@ -80,6 +80,7 @@ export class AuthService {
       name: user.name,
       email: user.email,
       avatarUrl: user.avatarUrl ?? null,
+      isPro: user.isPro ?? false,   // ← faltaba este campo
       memberNumber,
     };
   }
