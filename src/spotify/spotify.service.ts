@@ -89,16 +89,11 @@ export class SpotifyService {
 
     try {
       await this.authenticate();
-      const headers = { Authorization: `Bearer ${this._accessToken}` };
 
-      // 1. Álbumes del artista — limit en la URL para evitar problemas de serialización
-      const albumsRes = await firstValueFrom(
-        this.http.get<{ items: any[] }>(
-          `https://api.spotify.com/v1/artists/${id}/albums?limit=20`,
-          { headers },
-        ),
-      );
-      const albums: any[] = albumsRes.data?.items ?? [];
+      // 1. Álbumes del artista — usamos el SDK (igual que searchArtist) para evitar
+      //    problemas de serialización con HttpService de @nestjs/axios
+      const albumsResult = await this.spotifyApi.getArtistAlbums(id, { limit: 20 });
+      const albums = albumsResult.body.items ?? [];
       this.logger.log(`getArtistTopTracks step1: ${albums.length} álbumes para "${artistName || id}"`);
 
       if (albums.length === 0) {
@@ -106,32 +101,24 @@ export class SpotifyService {
         return [];
       }
 
-      // 2. Detalles completos de hasta 20 álbumes (incluye tracks con popularity)
-      const albumIds = albums.slice(0, 20).map((a: any) => a.id).join(',');
-      const detailsRes = await firstValueFrom(
-        this.http.get<{ albums: any[] }>(
-          'https://api.spotify.com/v1/albums',
-          { params: { ids: albumIds }, headers },
-        ),
-      );
-      const fullAlbums: any[] = detailsRes.data?.albums ?? [];
+      // 2. Detalles de los álbumes (incluye tracks y popularity del álbum)
+      const albumIds = albums.slice(0, 20).map((a) => a.id);
+      const detailsResult = await this.spotifyApi.getAlbums(albumIds);
+      const fullAlbums = detailsResult.body.albums ?? [];
       this.logger.log(`getArtistTopTracks step2: ${fullAlbums.length} álbumes con tracks`);
 
-      // 3. Aplanar tracks, deduplicar por nombre, ordenar por popularity
+      // 3. Aplanar tracks, deduplicar por nombre, ordenar por popularity del álbum
       const seen = new Set<string>();
       const allTracks: any[] = [];
       for (const album of fullAlbums) {
         for (const track of album.tracks?.items ?? []) {
-          const key = track.name?.toLowerCase().trim() ?? track.id;
+          const key = (track.name ?? track.id).toLowerCase().trim();
           if (!seen.has(key)) {
             seen.add(key);
             allTracks.push({
               ...track,
               popularity: album.popularity ?? 0,
-              album: {
-                name: album.name ?? '',
-                images: album.images ?? [],
-              },
+              album: { name: album.name ?? '', images: album.images ?? [] },
             });
           }
         }
@@ -142,7 +129,7 @@ export class SpotifyService {
         .slice(0, 10);
 
       this.logger.log(
-        `getArtistTopTracks step3: ${allTracks.length} tracks únicos → devolviendo ${top10.length}`,
+        `getArtistTopTracks step3: ${allTracks.length} únicos → devolviendo ${top10.length}`,
       );
 
       return top10.map((track) => ({
