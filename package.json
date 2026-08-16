@@ -39,6 +39,7 @@
     "class-validator": "^0.15.1",
     "cloudinary": "^2.10.0",
     "firebase-admin": "^14.2.0",
+    "helmet": "^8.3.0",
     "multer": "^2.2.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -95,7 +96,10 @@
       "!**/prisma/**"
     ],
     "coverageDirectory": "../coverage",
-    "coverageReporters": ["text", "lcov"],
+    "coverageReporters": [
+      "text",
+      "lcov"
+    ],
     "testEnvironment": "node"
   }
 }

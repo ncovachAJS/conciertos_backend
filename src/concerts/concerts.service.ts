@@ -251,7 +251,8 @@ export class ConcertsService {
    * Solo se incluyen conciertos de amigos con amistad ACCEPTED.
    */
   async findFriendsActivity(userId: string, page = 1, limit = 20) {
-    const skip = (page - 1) * limit;
+    const safeLimit = Math.min(limit, 50); // máximo 50 por página para evitar scraping masivo
+    const skip = (page - 1) * safeLimit;
 
     // Obtenemos los IDs de amigos aceptados
     const friendships = await this.prisma.friendship.findMany({
@@ -275,7 +276,7 @@ export class ConcertsService {
         where: { userId: { in: friendIds } },
         orderBy: { createdAt: 'desc' },
         skip,
-        take: limit,
+        take: safeLimit,
         include: CONCERT_INCLUDE,
       }),
       this.prisma.concert.count({
@@ -285,7 +286,7 @@ export class ConcertsService {
 
     return {
       data,
-      meta: { total, page, limit, totalPages: Math.ceil(total / limit) },
+      meta: { total, page, limit: safeLimit, totalPages: Math.ceil(total / safeLimit) },
     };
   }
 
@@ -354,7 +355,27 @@ export class ConcertsService {
 
   // ── Comentarios ────────────────────────────────────────────────────────────
 
-  async getComments(concertId: string) {
+  async getComments(userId: string, concertId: string) {
+    // Verificar que el usuario tiene acceso: es dueño, participante o amigo del dueño
+    const concert = await this.prisma.concert.findUnique({
+      where: { id: concertId },
+      select: {
+        userId: true,
+        participants: { select: { userId: true } },
+      },
+    });
+
+    if (!concert) throw new NotFoundException('Concierto no encontrado');
+
+    const isOwner = concert.userId === userId;
+    const isParticipant = concert.participants.some((p) => p.userId === userId);
+
+    if (!isOwner && !isParticipant) {
+      // Comprobar si son amigos
+      const areFriends = await this.friendsService.areFriends(userId, concert.userId);
+      if (!areFriends) throw new ForbiddenException('Sin acceso a este concierto');
+    }
+
     return this.prisma.concertComment.findMany({
       where: { concertId },
       orderBy: { createdAt: 'asc' },

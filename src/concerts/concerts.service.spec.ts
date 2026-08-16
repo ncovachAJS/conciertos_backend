@@ -299,10 +299,12 @@ describe('ConcertsService', () => {
   // ── getComments ───────────────────────────────────────────────────────────
 
   describe('getComments', () => {
-    it('returns list of comments', async () => {
+    it('returns list of comments for owner', async () => {
+      const concert = { userId: 'u1', participants: [] };
       const comment = { id: 'cm1', text: 'Genial', user: { id: 'u2', name: 'Ana', avatarUrl: null } };
+      mockPrisma.concert.findUnique.mockResolvedValue(concert);
       mockPrisma.concertComment.findMany.mockResolvedValue([comment]);
-      const result = await service.getComments('c1');
+      const result = await service.getComments('u1', 'c1');
       expect(result).toHaveLength(1);
       expect(result[0].text).toBe('Genial');
     });

@@ -2,14 +2,14 @@ import {
   Body, Controller, Delete, Get, Param, Post, Put, Req, UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsIn, IsString } from 'class-validator';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
 
 class SaveTokenDto {
   @IsString() token!: string;
-  @IsString() platform!: string;
+  @IsIn(['android', 'ios']) platform!: 'android' | 'ios';
 }
 
 @ApiBearerAuth('JWT')

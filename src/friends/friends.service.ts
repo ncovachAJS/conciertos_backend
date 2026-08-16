@@ -32,7 +32,7 @@ export class FriendsService {
           },
         ],
       },
-      select: { id: true, name: true, email: true, avatarUrl: true },
+      select: { id: true, name: true, avatarUrl: true },
       take: 20,
     });
 
@@ -138,8 +138,8 @@ export class FriendsService {
         OR: [{ senderId: userId }, { receiverId: userId }],
       },
       include: {
-        sender: { select: { id: true, name: true, avatarUrl: true, email: true } },
-        receiver: { select: { id: true, name: true, avatarUrl: true, email: true } },
+        sender: { select: { id: true, name: true, avatarUrl: true } },
+        receiver: { select: { id: true, name: true, avatarUrl: true } },
       },
     });
 

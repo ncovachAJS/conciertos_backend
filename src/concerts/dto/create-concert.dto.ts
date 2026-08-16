@@ -7,6 +7,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUrl,
   Max,
   Min,
 } from 'class-validator';
@@ -46,7 +47,7 @@ export class CreateConcertDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsUrl({ require_tld: true }, { message: 'imageUrl debe ser una URL válida' })
   imageUrl?: string;
 
   @ApiPropertyOptional({ minimum: 0, maximum: 5 })

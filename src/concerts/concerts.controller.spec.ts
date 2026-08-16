@@ -94,10 +94,10 @@ describe('ConcertsController', () => {
   });
 
   describe('getComments', () => {
-    it('delegates to service with concertId', async () => {
+    it('delegates to service with userId + concertId', async () => {
       mockConcertsService.getComments.mockResolvedValue([]);
-      await controller.getComments('c1');
-      expect(mockConcertsService.getComments).toHaveBeenCalledWith('c1');
+      await controller.getComments(mockReq, 'c1');
+      expect(mockConcertsService.getComments).toHaveBeenCalledWith('u1', 'c1');
     });
   });
 
@@ -105,7 +105,7 @@ describe('ConcertsController', () => {
     it('delegates to service with userId + concertId + text', async () => {
       const comment = { id: 'cm1', text: 'Bien' };
       mockConcertsService.addComment.mockResolvedValue(comment);
-      const result = await controller.addComment(mockReq, 'c1', 'Bien');
+      const result = await controller.addComment(mockReq, 'c1', { text: 'Bien' } as any);
       expect(mockConcertsService.addComment).toHaveBeenCalledWith('u1', 'c1', 'Bien');
       expect(result).toEqual(comment);
     });

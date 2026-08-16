@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import helmet from 'helmet';
 
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
@@ -11,6 +12,9 @@ async function bootstrap() {
     throw new Error('❌ JWT_SECRET no definida en las variables de entorno');
   }
   const app = await NestFactory.create(AppModule);
+
+  // Cabeceras de seguridad HTTP (XSS, clickjacking, MIME sniffing, etc.)
+  app.use(helmet());
 
   app.enableCors({
     origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [],

@@ -24,6 +24,7 @@ import {
 import { ConcertsService } from './concerts.service';
 import { CreateConcertDto } from './dto/create-concert.dto';
 import { UpdateConcertDto } from './dto/update-concert.dto';
+import { CreateCommentDto } from './dto/create-comment.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiBearerAuth('JWT')
@@ -99,8 +100,11 @@ export class ConcertsController {
 
   @Get(':concertId/comments')
   @ApiOperation({ summary: 'Lista de comentarios de un concierto' })
-  getComments(@Param('concertId') concertId: string) {
-    return this.concertsService.getComments(concertId);
+  getComments(
+    @Req() req: any,
+    @Param('concertId') concertId: string,
+  ) {
+    return this.concertsService.getComments(req.user.id, concertId);
   }
 
   @Post(':concertId/comments')
@@ -108,9 +112,9 @@ export class ConcertsController {
   addComment(
     @Req() req: any,
     @Param('concertId') concertId: string,
-    @Body('text') text: string,
+    @Body() dto: CreateCommentDto,
   ) {
-    return this.concertsService.addComment(req.user.id, concertId, text);
+    return this.concertsService.addComment(req.user.id, concertId, dto.text);
   }
 
   @Delete(':concertId/comments/:commentId')

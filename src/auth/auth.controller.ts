@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -20,11 +21,15 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // Límite estricto en registro: 5 intentos por minuto para prevenir bots
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
+  // Límite estricto en login: 5 intentos por minuto para prevenir fuerza bruta
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
@@ -39,6 +44,8 @@ export class AuthController {
 
   // ── Password reset ──────────────────────────────────────────────────────
 
+  // Límite estricto en recuperación: 5 intentos por minuto para evitar enumeración de emails
+  @Throttle({ default: { ttl: 60_000, limit: 5 } })
   @Post('forgot-password')
   forgotPassword(@Body('email') email: string) {
     return this.authService.forgotPassword(email);
