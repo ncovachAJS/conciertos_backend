@@ -76,61 +76,90 @@ export class SpotifyService {
   /**
    * Devuelve las canciones más populares de un artista (máx. 10).
    *
-   * Usa el Search API (/v1/search?type=track) porque Spotify restringió
-   * el endpoint /artists/{id}/top-tracks a OAuth de usuario (devuelve 403
-   * con Client Credentials desde 2024). El Search API sigue funcionando
-   * con Client Credentials.
+   * Estrategia:
+   * 1. GET /artists/{id}/albums  → álbumes recientes del artista (Client Credentials ✓)
+   * 2. GET /albums?ids=...       → detalles de los álbumes (incluye popularity de tracks)
+   * 3. Ordena todos los tracks por popularity y devuelve el top 10
+   *
+   * Nota: /artists/{id}/top-tracks requiere OAuth de usuario desde 2024 (403 con CC).
    */
   async getArtistTopTracks(artistId: string, artistName: string, market = 'ES') {
-    if (!artistId?.trim() && !artistName?.trim()) return [];
+    const id = artistId?.trim() ?? '';
+    if (!id) return [];
 
     try {
       await this.authenticate();
+      const headers = { Authorization: `Bearer ${this._accessToken}` };
 
-      // Búsqueda por nombre de artista (mismo approach que usaba el cliente Flutter)
-      const q = artistName?.trim() || artistId.trim();
-      const { data } = await firstValueFrom(
-        this.http.get<{ tracks: { items: any[] } }>(
-          'https://api.spotify.com/v1/search',
+      // 1. Álbumes del artista (singles + álbumes completos)
+      const albumsRes = await firstValueFrom(
+        this.http.get<{ items: any[] }>(
+          `https://api.spotify.com/v1/artists/${id}/albums`,
           {
-            params: { q, type: 'track', limit: '20', market },
-            headers: { Authorization: `Bearer ${this._accessToken}` },
+            params: { include_groups: 'album,single', market, limit: '20' },
+            headers,
           },
         ),
       );
+      const albums: any[] = albumsRes.data?.items ?? [];
 
-      const items: any[] = data?.tracks?.items ?? [];
+      if (albums.length === 0) {
+        this.logger.warn(`getArtistTopTracks("${id}"): sin álbumes en market=${market}`);
+        return [];
+      }
 
-      // Filtrar solo tracks del artista correcto, ordenar por popularidad
-      const filtered = items
-        .filter((t) =>
-          !artistId ||
-          (t.artists ?? []).some((a: any) => a.id === artistId),
-        )
+      // 2. Detalles completos de hasta 20 álbumes (incluye tracks con popularity)
+      const albumIds = albums.slice(0, 20).map((a: any) => a.id).join(',');
+      const detailsRes = await firstValueFrom(
+        this.http.get<{ albums: any[] }>(
+          'https://api.spotify.com/v1/albums',
+          { params: { ids: albumIds, market }, headers },
+        ),
+      );
+      const fullAlbums: any[] = detailsRes.data?.albums ?? [];
+
+      // 3. Aplanar tracks, deduplicar por nombre, ordenar por popularity
+      const seen = new Set<string>();
+      const allTracks: any[] = [];
+      for (const album of fullAlbums) {
+        for (const track of album.tracks?.items ?? []) {
+          const key = track.name?.toLowerCase().trim() ?? track.id;
+          if (!seen.has(key)) {
+            seen.add(key);
+            allTracks.push({
+              ...track,
+              popularity: album.popularity ?? 0, // aproximación: usamos la del álbum
+              album: {
+                name: album.name ?? '',
+                images: album.images ?? [],
+              },
+            });
+          }
+        }
+      }
+
+      const top10 = allTracks
         .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
         .slice(0, 10);
 
       this.logger.debug(
-        `getArtistTopTracks("${q}") → ${items.length} resultados, ${filtered.length} del artista`,
+        `getArtistTopTracks("${artistName || id}") → ${allTracks.length} tracks únicos, devolviendo ${top10.length}`,
       );
 
-      return filtered.map((track) => ({
+      return top10.map((track) => ({
         id: track.id,
         name: track.name,
         duration_ms: track.duration_ms,
         preview_url: track.preview_url ?? null,
-        explicit: track.explicit,
+        explicit: track.explicit ?? false,
         popularity: track.popularity,
-        external_urls: track.external_urls,
-        album: {
-          name: track.album?.name ?? '',
-          images: track.album?.images ?? [],
-        },
+        external_urls: track.external_urls ?? {},
+        album: track.album,
         artists: (track.artists ?? []).map((a: any) => ({ id: a.id, name: a.name })),
       }));
     } catch (err: any) {
       this.logger.error(
-        `getArtistTopTracks("${artistId}", "${market}") falló: ${err?.message ?? err}`,
+        `getArtistTopTracks("${id}", "${market}") falló: ${err?.message ?? err}`,
       );
       return [];
     }
