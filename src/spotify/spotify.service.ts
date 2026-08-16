@@ -91,20 +91,21 @@ export class SpotifyService {
       await this.authenticate();
       const headers = { Authorization: `Bearer ${this._accessToken}` };
 
-      // 1. Álbumes del artista (singles + álbumes completos)
+      // 1. Álbumes del artista — sin filtro de market para máxima cobertura
       const albumsRes = await firstValueFrom(
         this.http.get<{ items: any[] }>(
           `https://api.spotify.com/v1/artists/${id}/albums`,
           {
-            params: { include_groups: 'album,single', market, limit: '20' },
+            params: { include_groups: 'album,single', limit: '20' },
             headers,
           },
         ),
       );
       const albums: any[] = albumsRes.data?.items ?? [];
+      this.logger.log(`getArtistTopTracks step1: ${albums.length} álbumes para "${artistName || id}"`);
 
       if (albums.length === 0) {
-        this.logger.warn(`getArtistTopTracks("${id}"): sin álbumes en market=${market}`);
+        this.logger.warn(`getArtistTopTracks("${id}"): sin álbumes`);
         return [];
       }
 
@@ -113,10 +114,11 @@ export class SpotifyService {
       const detailsRes = await firstValueFrom(
         this.http.get<{ albums: any[] }>(
           'https://api.spotify.com/v1/albums',
-          { params: { ids: albumIds, market }, headers },
+          { params: { ids: albumIds }, headers },
         ),
       );
       const fullAlbums: any[] = detailsRes.data?.albums ?? [];
+      this.logger.log(`getArtistTopTracks step2: ${fullAlbums.length} álbumes con tracks`);
 
       // 3. Aplanar tracks, deduplicar por nombre, ordenar por popularity
       const seen = new Set<string>();
@@ -128,7 +130,7 @@ export class SpotifyService {
             seen.add(key);
             allTracks.push({
               ...track,
-              popularity: album.popularity ?? 0, // aproximación: usamos la del álbum
+              popularity: album.popularity ?? 0,
               album: {
                 name: album.name ?? '',
                 images: album.images ?? [],
@@ -142,8 +144,8 @@ export class SpotifyService {
         .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
         .slice(0, 10);
 
-      this.logger.debug(
-        `getArtistTopTracks("${artistName || id}") → ${allTracks.length} tracks únicos, devolviendo ${top10.length}`,
+      this.logger.log(
+        `getArtistTopTracks step3: ${allTracks.length} tracks únicos → devolviendo ${top10.length}`,
       );
 
       return top10.map((track) => ({
