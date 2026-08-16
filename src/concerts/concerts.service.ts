@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ForbiddenException,
+  HttpException,
+  HttpStatus,
   Injectable,
   Logger,
   NotFoundException,
@@ -100,8 +102,32 @@ export class ConcertsService {
     };
   }
 
+  // Límite de conciertos para usuarios gratuitos
+  static readonly FREE_CONCERT_LIMIT = 50;
+
   async create(userId: string, dto: CreateConcertDto) {
     this.logger.log(`DTO recibido: ${JSON.stringify(dto)}`);
+
+    // Verificar límite de conciertos para usuarios gratuitos
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { isPro: true },
+    });
+    if (!user?.isPro) {
+      const count = await this.prisma.concert.count({ where: { userId } });
+      if (count >= ConcertsService.FREE_CONCERT_LIMIT) {
+        throw new HttpException(
+          {
+            statusCode: HttpStatus.PAYMENT_REQUIRED,
+            error: 'Payment Required',
+            message: `Has alcanzado el límite de ${ConcertsService.FREE_CONCERT_LIMIT} conciertos de la versión gratuita`,
+            code: 'PRO_REQUIRED',
+          },
+          HttpStatus.PAYMENT_REQUIRED,
+        );
+      }
+    }
+
     const concert = await this.prisma.concert.create({
       data: {
         name: dto.name ?? '',

@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, HttpException, NotFoundException } from '@nestjs/common';
 import { ConcertsService } from './concerts.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FriendsService } from '../friends/friends.service';
@@ -33,6 +33,9 @@ const baseConcert = {
 };
 
 const mockPrisma = {
+  user: {
+    findUnique: jest.fn(),
+  },
   concert: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
@@ -112,7 +115,31 @@ describe('ConcertsService', () => {
   // ── create ────────────────────────────────────────────────────────────────
 
   describe('create', () => {
+    it('throws 402 when free user reaches concert limit', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ isPro: false });
+      mockPrisma.concert.count.mockResolvedValue(50);
+      let thrown: unknown = null;
+      try {
+        await service.create('u1', { artist: 'Artista', date: '2025-06-01' } as any);
+      } catch (err) {
+        thrown = err;
+      }
+      expect(thrown).toBeInstanceOf(HttpException);
+      expect((thrown as HttpException).getStatus()).toBe(402);
+    });
+
+    it('allows create when user is Pro regardless of concert count', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ isPro: true });
+      mockPrisma.concert.create.mockResolvedValue(baseConcert);
+      mockPrisma.concert.findUnique.mockResolvedValue(baseConcert);
+      const result = await service.create('u1', { artist: 'Artista', date: '2025-06-01' } as any);
+      expect(mockPrisma.concert.count).not.toHaveBeenCalled();
+      expect(result).toEqual(baseConcert);
+    });
+
     it('creates concert and calls findOne', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ isPro: false });
+      mockPrisma.concert.count.mockResolvedValue(0);
       mockPrisma.concert.create.mockResolvedValue(baseConcert);
       mockPrisma.concert.findUnique.mockResolvedValue(baseConcert);
       const result = await service.create('u1', {
@@ -124,6 +151,8 @@ describe('ConcertsService', () => {
     });
 
     it('notifies friends after creation (fire-and-forget)', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ isPro: false });
+      mockPrisma.concert.count.mockResolvedValue(0);
       mockPrisma.concert.create.mockResolvedValue(baseConcert);
       mockPrisma.concert.findUnique.mockResolvedValue(baseConcert);
       await service.create('u1', { artist: 'Artista', date: '2025-06-01' } as any);
@@ -132,6 +161,8 @@ describe('ConcertsService', () => {
     });
 
     it('tags friends when taggedFriendIds is provided', async () => {
+      mockPrisma.user.findUnique.mockResolvedValue({ isPro: false });
+      mockPrisma.concert.count.mockResolvedValue(0);
       mockPrisma.concert.create.mockResolvedValue(baseConcert);
       mockPrisma.concert.findUnique.mockResolvedValue(baseConcert);
       mockPrisma.friendship.findMany.mockResolvedValue([
