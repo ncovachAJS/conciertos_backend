@@ -76,30 +76,45 @@ export class SpotifyService {
   /**
    * Devuelve las canciones más populares de un artista (máx. 10).
    *
-   * Llama directamente a la REST API de Spotify con `?market=` (no `?country=`),
-   * evitando el bug de spotify-web-api-node v5 que usa el parámetro obsoleto
-   * `country` y recibe 0 resultados en la respuesta actual de Spotify.
+   * Usa el Search API (/v1/search?type=track) porque Spotify restringió
+   * el endpoint /artists/{id}/top-tracks a OAuth de usuario (devuelve 403
+   * con Client Credentials desde 2024). El Search API sigue funcionando
+   * con Client Credentials.
    */
-  async getArtistTopTracks(artistId: string, market = 'ES') {
-    if (!artistId?.trim()) return [];
+  async getArtistTopTracks(artistId: string, artistName: string, market = 'ES') {
+    if (!artistId?.trim() && !artistName?.trim()) return [];
 
     try {
       await this.authenticate();
 
-      // Llamada directa a la REST API — evita el param `country` obsoleto
-      // que usa internamente spotify-web-api-node v5.
-      const url = `https://api.spotify.com/v1/artists/${encodeURIComponent(artistId.trim())}/top-tracks`;
+      // Búsqueda por nombre de artista (mismo approach que usaba el cliente Flutter)
+      const q = artistName?.trim() || artistId.trim();
       const { data } = await firstValueFrom(
-        this.http.get<{ tracks: any[] }>(url, {
-          params: { market },
-          headers: { Authorization: `Bearer ${this._accessToken}` },
-        }),
+        this.http.get<{ tracks: { items: any[] } }>(
+          'https://api.spotify.com/v1/search',
+          {
+            params: { q, type: 'track', limit: '20', market },
+            headers: { Authorization: `Bearer ${this._accessToken}` },
+          },
+        ),
       );
 
-      const tracks: any[] = data?.tracks ?? [];
-      this.logger.debug(`getArtistTopTracks("${artistId}") → ${tracks.length} tracks`);
+      const items: any[] = data?.tracks?.items ?? [];
 
-      return tracks.map((track) => ({
+      // Filtrar solo tracks del artista correcto, ordenar por popularidad
+      const filtered = items
+        .filter((t) =>
+          !artistId ||
+          (t.artists ?? []).some((a: any) => a.id === artistId),
+        )
+        .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
+        .slice(0, 10);
+
+      this.logger.debug(
+        `getArtistTopTracks("${q}") → ${items.length} resultados, ${filtered.length} del artista`,
+      );
+
+      return filtered.map((track) => ({
         id: track.id,
         name: track.name,
         duration_ms: track.duration_ms,
