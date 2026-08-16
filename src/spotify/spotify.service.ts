@@ -90,47 +90,19 @@ export class SpotifyService {
     try {
       await this.authenticate();
 
-      // 1. Álbumes del artista — usamos el SDK (igual que searchArtist) para evitar
-      //    problemas de serialización con HttpService de @nestjs/axios
-      const albumsResult = await this.spotifyApi.getArtistAlbums(id, { limit: 20 });
-      const albums = albumsResult.body.items ?? [];
-      this.logger.log(`getArtistTopTracks step1: ${albums.length} álbumes para "${artistName || id}"`);
+      // Search API: único endpoint de Spotify que funciona con Client Credentials.
+      // Buscamos por nombre de artista — los resultados ya son sus canciones,
+      // no filtramos por artistId porque los IDs en tracks de búsqueda no siempre
+      // coinciden con el ID del endpoint de artistas.
+      const q = artistName?.trim() || id;
+      const result = await this.spotifyApi.searchTracks(q, { limit: 10 });
+      const items = result.body.tracks?.items ?? [];
 
-      if (albums.length === 0) {
-        this.logger.warn(`getArtistTopTracks("${id}"): sin álbumes`);
-        return [];
-      }
+      this.logger.log(`getArtistTopTracks("${q}") → ${items.length} tracks`);
 
-      // 2. Detalles de los álbumes (incluye tracks y popularity del álbum)
-      const albumIds = albums.slice(0, 20).map((a) => a.id);
-      const detailsResult = await this.spotifyApi.getAlbums(albumIds);
-      const fullAlbums = detailsResult.body.albums ?? [];
-      this.logger.log(`getArtistTopTracks step2: ${fullAlbums.length} álbumes con tracks`);
-
-      // 3. Aplanar tracks, deduplicar por nombre, ordenar por popularity del álbum
-      const seen = new Set<string>();
-      const allTracks: any[] = [];
-      for (const album of fullAlbums) {
-        for (const track of album.tracks?.items ?? []) {
-          const key = (track.name ?? track.id).toLowerCase().trim();
-          if (!seen.has(key)) {
-            seen.add(key);
-            allTracks.push({
-              ...track,
-              popularity: album.popularity ?? 0,
-              album: { name: album.name ?? '', images: album.images ?? [] },
-            });
-          }
-        }
-      }
-
-      const top10 = allTracks
+      const top10 = items
         .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
         .slice(0, 10);
-
-      this.logger.log(
-        `getArtistTopTracks step3: ${allTracks.length} únicos → devolviendo ${top10.length}`,
-      );
 
       return top10.map((track) => ({
         id: track.id,
