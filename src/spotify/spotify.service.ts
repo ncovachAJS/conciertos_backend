@@ -82,71 +82,39 @@ export class SpotifyService {
    * con Client Credentials.
    */
   async getArtistTopTracks(artistId: string, artistName: string, market = 'ES') {
-    const id   = artistId?.trim()   ?? '';
-    const name = artistName?.trim() ?? '';
-
-    if (!id && !name) return [];
+    if (!artistId?.trim() && !artistName?.trim()) return [];
 
     try {
       await this.authenticate();
 
-      // Usar el filtro de campo "artist:" para buscar por artista, no por título.
-      // Probamos primero con el mercado solicitado; si da 0 resultados útiles,
-      // repetimos sin restricción de mercado (bands latinoamericanas, etc.).
-      const q = name ? `artist:"${name}"` : id;
+      // Búsqueda por nombre de artista (mismo approach que usaba el cliente Flutter)
+      const q = artistName?.trim() || artistId.trim();
+      const { data } = await firstValueFrom(
+        this.http.get<{ tracks: { items: any[] } }>(
+          'https://api.spotify.com/v1/search',
+          {
+            params: { q, type: 'track', limit: '20', market },
+            headers: { Authorization: `Bearer ${this._accessToken}` },
+          },
+        ),
+      );
 
-      const fetchItems = async (params: Record<string, string>) => {
-        const { data } = await firstValueFrom(
-          this.http.get<{ tracks: { items: any[] } }>(
-            'https://api.spotify.com/v1/search',
-            {
-              params: { q, type: 'track', limit: '50', ...params },
-              headers: { Authorization: `Bearer ${this._accessToken}` },
-            },
-          ),
-        );
-        return (data?.tracks?.items ?? []) as any[];
-      };
+      const items: any[] = data?.tracks?.items ?? [];
 
-      let items = await fetchItems({ market });
-
-      // Si el mercado específico no tiene resultados, volvemos a intentar sin él
-      if (items.length === 0) {
-        this.logger.debug(`getArtistTopTracks: sin resultados en market=${market}, reintentando sin mercado`);
-        items = await fetchItems({});
-      }
-
-      // 1️⃣ Filtro exacto por ID de artista
-      let filtered = id
-        ? items.filter((t) => (t.artists ?? []).some((a: any) => a.id === id))
-        : [];
-
-      // 2️⃣ Fallback: coincidencia por nombre de artista (case-insensitive)
-      if (filtered.length === 0 && name) {
-        const nameLower = name.toLowerCase();
-        filtered = items.filter((t) =>
-          (t.artists ?? []).some(
-            (a: any) =>
-              (a.name as string | undefined)?.toLowerCase().includes(nameLower) ||
-              nameLower.includes((a.name as string | undefined)?.toLowerCase() ?? '__'),
-          ),
-        );
-      }
-
-      // 3️⃣ Último recurso: devolver lo que Spotify dio ordenado por popularidad
-      if (filtered.length === 0) {
-        filtered = items;
-      }
-
-      const top10 = filtered
+      // Filtrar solo tracks del artista correcto, ordenar por popularidad
+      const filtered = items
+        .filter((t) =>
+          !artistId ||
+          (t.artists ?? []).some((a: any) => a.id === artistId),
+        )
         .sort((a, b) => (b.popularity ?? 0) - (a.popularity ?? 0))
         .slice(0, 10);
 
       this.logger.debug(
-        `getArtistTopTracks("${name || id}") → ${items.length} totales, ${filtered.length} del artista, devolviendo ${top10.length}`,
+        `getArtistTopTracks("${q}") → ${items.length} resultados, ${filtered.length} del artista`,
       );
 
-      return top10.map((track) => ({
+      return filtered.map((track) => ({
         id: track.id,
         name: track.name,
         duration_ms: track.duration_ms,
@@ -162,7 +130,7 @@ export class SpotifyService {
       }));
     } catch (err: any) {
       this.logger.error(
-        `getArtistTopTracks("${id}", "${market}") falló: ${err?.message ?? err}`,
+        `getArtistTopTracks("${artistId}", "${market}") falló: ${err?.message ?? err}`,
       );
       return [];
     }
