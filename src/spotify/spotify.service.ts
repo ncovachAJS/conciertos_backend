@@ -91,14 +91,11 @@ export class SpotifyService {
       await this.authenticate();
       const headers = { Authorization: `Bearer ${this._accessToken}` };
 
-      // 1. Álbumes del artista — sin include_groups para evitar encoding de coma
+      // 1. Álbumes del artista — limit en la URL para evitar problemas de serialización
       const albumsRes = await firstValueFrom(
         this.http.get<{ items: any[] }>(
-          `https://api.spotify.com/v1/artists/${id}/albums`,
-          {
-            params: { limit: 50 },
-            headers,
-          },
+          `https://api.spotify.com/v1/artists/${id}/albums?limit=20`,
+          { headers },
         ),
       );
       const albums: any[] = albumsRes.data?.items ?? [];
