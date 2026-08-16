@@ -144,6 +144,7 @@ enum NotificationType {
   FRIEND_REQUEST   // solicitud de amistad recibida
   FRIEND_ACCEPTED  // solicitud aceptada
   FRIEND_CONCERT   // un amigo añadió un concierto
+  CONCERT_COMMENT  // alguien comentó en tu concierto
 }
 
 model Notification {

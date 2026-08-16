@@ -341,12 +341,26 @@ export class ConcertsService {
   async addComment(userId: string, concertId: string, text: string) {
     if (!text?.trim()) throw new Error('El comentario no puede estar vacío');
 
-    const comment = await this.prisma.concertComment.create({
-      data: { concertId, userId, text: text.trim() },
-      include: {
-        user: { select: { id: true, name: true, avatarUrl: true } },
-      },
-    });
+    const [comment, concert] = await Promise.all([
+      this.prisma.concertComment.create({
+        data: { concertId, userId, text: text.trim() },
+        include: {
+          user: { select: { id: true, name: true, avatarUrl: true } },
+        },
+      }),
+      this.prisma.concert.findUnique({
+        where: { id: concertId },
+        select: { userId: true, name: true, artist: true },
+      }),
+    ]);
+
+    // Notificar al dueño del concierto (no al propio comentarista)
+    if (concert && concert.userId !== userId) {
+      const concertName = concert.name || concert.artist;
+      this.notificationsService
+        .notifyConcertComment(userId, concert.userId, concertName, concertId)
+        .catch(() => {});
+    }
 
     return comment;
   }

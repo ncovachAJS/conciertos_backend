@@ -86,6 +86,18 @@ export class NotificationsService {
     });
   }
 
+  async notifyConcertComment(senderId: string, concertOwnerId: string, concertName: string, concertId: string) {
+    const sender = await this._getSenderName(senderId);
+    return this.notify({
+      userId: concertOwnerId,
+      senderId,
+      type: NotificationType.CONCERT_COMMENT,
+      title: '💬 Nuevo comentario en tu concierto',
+      body: `${sender} comentó en "${concertName}"`,
+      data: { concertId },
+    });
+  }
+
   async notifyFriendConcert(senderId: string, concertName: string, concertId: string) {
     const friendships = await this.prisma.friendship.findMany({
       where: {
