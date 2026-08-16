@@ -77,23 +77,30 @@ export class SpotifyService {
   async getArtistTopTracks(artistId: string, market = 'ES') {
     if (!artistId?.trim()) return [];
 
-    await this.authenticate();
+    try {
+      await this.authenticate();
 
-    const result = await this.spotifyApi.getArtistTopTracks(artistId.trim(), market);
+      const result = await this.spotifyApi.getArtistTopTracks(artistId.trim(), market);
 
-    return result.body.tracks.map((track) => ({
-      id: track.id,
-      name: track.name,
-      duration_ms: track.duration_ms,
-      preview_url: track.preview_url ?? null,
-      explicit: track.explicit,
-      popularity: track.popularity,
-      external_urls: track.external_urls,
-      album: {
-        name: track.album.name,
-        images: track.album.images,
-      },
-      artists: track.artists.map((a) => ({ id: a.id, name: a.name })),
-    }));
+      return (result.body.tracks ?? []).map((track) => ({
+        id: track.id,
+        name: track.name,
+        duration_ms: track.duration_ms,
+        preview_url: track.preview_url ?? null,
+        explicit: track.explicit,
+        popularity: track.popularity,
+        external_urls: track.external_urls,
+        album: {
+          name: track.album.name,
+          images: track.album.images,
+        },
+        artists: track.artists.map((a) => ({ id: a.id, name: a.name })),
+      }));
+    } catch (err: any) {
+      this.logger.error(
+        `getArtistTopTracks("${artistId}", "${market}") falló: ${err?.message ?? err}`,
+      );
+      return [];
+    }
   }
 }
