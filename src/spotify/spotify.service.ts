@@ -96,7 +96,7 @@ export class SpotifyService {
         this.http.get<{ items: any[] }>(
           `https://api.spotify.com/v1/artists/${id}/albums`,
           {
-            params: { limit: '20' },
+            params: { limit: 50 },
             headers,
           },
         ),
