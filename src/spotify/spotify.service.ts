@@ -55,7 +55,6 @@ export class SpotifyService {
 
     const artist = items[0];
 
-    // ✅ Sintaxis TypeScript correcta (antes había código Dart aquí)
     const image =
       (artist.images?.length ?? 0) > 0 ? artist.images[0].url : null;
 
@@ -67,5 +66,34 @@ export class SpotifyService {
       followers: artist.followers?.total ?? 0,
       genres: artist.genres ?? [],
     };
+  }
+
+  /**
+   * Devuelve las canciones más populares de un artista (máx. 10).
+   * Usa el endpoint /artists/{id}/top-tracks que funciona con Client Credentials.
+   * La respuesta tiene el mismo shape que la API de Spotify para que el cliente
+   * pueda usar SpotifyTrack.fromJson() sin cambios.
+   */
+  async getArtistTopTracks(artistId: string, market = 'ES') {
+    if (!artistId?.trim()) return [];
+
+    await this.authenticate();
+
+    const result = await this.spotifyApi.getArtistTopTracks(artistId.trim(), market);
+
+    return result.body.tracks.map((track) => ({
+      id: track.id,
+      name: track.name,
+      duration_ms: track.duration_ms,
+      preview_url: track.preview_url ?? null,
+      explicit: track.explicit,
+      popularity: track.popularity,
+      external_urls: track.external_urls,
+      album: {
+        name: track.album.name,
+        images: track.album.images,
+      },
+      artists: track.artists.map((a) => ({ id: a.id, name: a.name })),
+    }));
   }
 }

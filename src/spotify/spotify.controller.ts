@@ -2,12 +2,14 @@ import {
   BadRequestException,
   Controller,
   Get,
+  Param,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
+  ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
@@ -33,5 +35,21 @@ export class SpotifyController {
     }
 
     return this.spotifyService.searchArtist(name);
+  }
+
+  @Get('artist/:id/top-tracks')
+  @ApiOperation({ summary: 'Canciones más populares de un artista (máx. 10)' })
+  @ApiParam({ name: 'id', description: 'Spotify artist ID', example: '2ye2Wgw4gimLv2eAKyk1NB' })
+  @ApiQuery({ name: 'market', required: false, description: 'Código de país ISO 3166-1 alpha-2', example: 'ES' })
+  @ApiResponse({ status: 200, description: 'Lista de tracks en formato Spotify.' })
+  async topTracks(
+    @Param('id') artistId: string,
+    @Query('market') market?: string,
+  ) {
+    if (!artistId?.trim()) {
+      throw new BadRequestException('El parámetro "id" es obligatorio');
+    }
+
+    return this.spotifyService.getArtistTopTracks(artistId, market ?? 'ES');
   }
 }
