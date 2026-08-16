@@ -325,4 +325,37 @@ export class ConcertsService {
       this.notificationsService.notifyConcertTag(ownerId, friendId, concertName, concertId).catch(() => {});
     }
   }
+
+  // ── Comentarios ────────────────────────────────────────────────────────────
+
+  async getComments(concertId: string) {
+    return this.prisma.concertComment.findMany({
+      where: { concertId },
+      orderBy: { createdAt: 'asc' },
+      include: {
+        user: { select: { id: true, name: true, avatarUrl: true } },
+      },
+    });
+  }
+
+  async addComment(userId: string, concertId: string, text: string) {
+    if (!text?.trim()) throw new Error('El comentario no puede estar vacío');
+
+    const comment = await this.prisma.concertComment.create({
+      data: { concertId, userId, text: text.trim() },
+      include: {
+        user: { select: { id: true, name: true, avatarUrl: true } },
+      },
+    });
+
+    return comment;
+  }
+
+  async deleteComment(userId: string, commentId: string) {
+    const comment = await this.prisma.concertComment.findFirst({
+      where: { id: commentId, userId },
+    });
+    if (!comment) throw new Error('Comentario no encontrado o sin permisos');
+    return this.prisma.concertComment.delete({ where: { id: commentId } });
+  }
 }

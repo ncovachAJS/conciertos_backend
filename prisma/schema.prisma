@@ -43,6 +43,7 @@ model User {
   sentNotifications     Notification[] @relation("NotificationSender")
   deviceTokens          DeviceToken[]
   wantToAttend          WantToAttend[]
+  comments              ConcertComment[]
 }
 
 model Concert {
@@ -72,6 +73,7 @@ model Concert {
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   photos       ConcertPhoto[]
   participants ConcertParticipant[]
+  comments     ConcertComment[]
 }
 
 model ConcertParticipant {
@@ -178,6 +180,20 @@ model WantToAttend {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, eventId])
+  @@index([userId])
+}
+
+model ConcertComment {
+  id        String   @id @default(cuid())
+  concertId String
+  userId    String
+  text      String
+  createdAt DateTime @default(now())
+
+  concert Concert @relation(fields: [concertId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([concertId, createdAt])
   @@index([userId])
 }
 

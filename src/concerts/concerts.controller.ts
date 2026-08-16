@@ -94,4 +94,32 @@ export class ConcertsController {
   remove(@Req() req: any, @Param('id') id: string) {
     return this.concertsService.remove(req.user.id, id);
   }
+
+  // ── Comentarios ────────────────────────────────────────────────────────────
+
+  @Get(':concertId/comments')
+  @ApiOperation({ summary: 'Lista de comentarios de un concierto' })
+  getComments(@Param('concertId') concertId: string) {
+    return this.concertsService.getComments(concertId);
+  }
+
+  @Post(':concertId/comments')
+  @ApiOperation({ summary: 'Añadir un comentario a un concierto' })
+  addComment(
+    @Req() req: any,
+    @Param('concertId') concertId: string,
+    @Body('text') text: string,
+  ) {
+    return this.concertsService.addComment(req.user.id, concertId, text);
+  }
+
+  @Delete(':concertId/comments/:commentId')
+  @ApiOperation({ summary: 'Eliminar un comentario propio' })
+  deleteComment(
+    @Req() req: any,
+    @Param('concertId') concertId: string,
+    @Param('commentId') commentId: string,
+  ) {
+    return this.concertsService.deleteComment(req.user.id, commentId);
+  }
 }
