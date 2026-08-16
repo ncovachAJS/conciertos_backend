@@ -42,16 +42,21 @@ export class UploadsService {
 
     this.logger.debug(`Procesando subida de imagen para usuario ${userId}`);
 
+    const year = new Date().getFullYear();
+
     return new Promise((resolve, reject) => {
       cloudinary.uploader
-        .upload_stream({ folder: `conciertos/users/${userId}` }, (error, result) => {
-          if (error) {
-            this.logger.error('Error al subir imagen a Cloudinary', error.message);
-            return reject(error);
-          }
-          this.logger.debug(`Imagen subida: ${result!.secure_url}`);
-          resolve(result!.secure_url);
-        })
+        .upload_stream(
+          { folder: `conciertos/users/${userId}/${year}` },
+          (error, result) => {
+            if (error) {
+              this.logger.error('Error al subir imagen a Cloudinary', error.message);
+              return reject(error);
+            }
+            this.logger.debug(`Imagen subida: ${result!.secure_url}`);
+            resolve(result!.secure_url);
+          },
+        )
         .end(file.buffer);
     });
   }

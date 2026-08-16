@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { UploadsService } from '../uploads/uploads.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly uploadsService: UploadsService,
+  ) {}
 
   async findAll() {
     return this.prisma.user.findMany({
@@ -30,11 +34,24 @@ export class UsersService {
   }
 
   async updateAvatar(userId: string, avatarUrl: string) {
-    return this.prisma.user.update({
+    // Obtener URL del avatar actual para borrarlo de Cloudinary después
+    const current = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatarUrl: true },
+    });
+
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: { avatarUrl },
       select: { id: true, name: true, email: true, avatarUrl: true },
     });
+
+    // Borrar el avatar anterior de Cloudinary en background (no bloqueamos la respuesta)
+    if (current?.avatarUrl && current.avatarUrl !== avatarUrl) {
+      this.uploadsService.deleteImage(current.avatarUrl).catch(() => {});
+    }
+
+    return updated;
   }
 
   async updateName(userId: string, name: string) {
