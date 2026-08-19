@@ -33,14 +33,19 @@ export class RecommendationsService {
   }
 
   async getRecommendations(dto: RecommendationsDto) {
-    const { artists, countryCode } = dto;
+    const { artists, countryCode, lat, lng, radius } = dto;
     const apiKey = this.config.get<string>('TICKETMASTER_API_KEY') ?? '';
+
+    const latlong =
+      lat != null && lng != null ? `${lat},${lng}` : undefined;
 
     // Procesar hasta 5 artistas en paralelo para no sobrecargar la API
     const top5 = [...new Set(artists.map((a) => a.trim()).filter(Boolean))].slice(0, 5);
 
     const allResults = await Promise.all(
-      top5.map((artist) => this._fetchForArtist(artist, countryCode, apiKey)),
+      top5.map((artist) =>
+        this._fetchForArtist(artist, apiKey, { countryCode, latlong, radius }),
+      ),
     );
 
     // Aplanar, deduplicar por id y ordenar por fecha
@@ -62,10 +67,11 @@ export class RecommendationsService {
 
   private async _fetchForArtist(
     artist: string,
-    countryCode: string | undefined,
     apiKey: string,
+    geo: { countryCode?: string; latlong?: string; radius?: number },
   ): Promise<any[]> {
-    const cacheKey = `${artist.toLowerCase()}|${countryCode ?? ''}`;
+    const { countryCode, latlong, radius } = geo;
+    const cacheKey = `${artist.toLowerCase()}|${latlong ?? countryCode ?? ''}`;
     const cached = this.cache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) return cached.data;
 
@@ -77,7 +83,12 @@ export class RecommendationsService {
         classificationName: 'Music',
         sort: 'date,asc',
         size: 5,
-        ...(countryCode?.trim() ? { countryCode } : {}),
+        // Geolocalización tiene prioridad sobre país
+        ...(latlong
+          ? { latlong, radius: radius ?? 50, unit: 'km' }
+          : countryCode?.trim()
+            ? { countryCode }
+            : {}),
       };
 
       if (attractionId) {
