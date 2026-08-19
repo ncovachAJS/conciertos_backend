@@ -11,15 +11,26 @@ import { SetlistService } from './setlist.service';
 export class SetlistController {
   constructor(private readonly setlistService: SetlistService) {}
 
+  /**
+   * GET /setlist/search
+   *
+   * Modos:
+   *  - Búsqueda por concierto concreto: artistName + date (dd-MM-yyyy)
+   *  - Búsqueda paginada por artista:   artistName  (sin date)
+   *  - Búsqueda paginada por festival:  tourName
+   *
+   * Parámetro opcional: p (página, por defecto 1)
+   */
   @Get('search')
   async search(
-    @Query('artistName') artistName: string,
-    @Query('date') date: string,
+    @Query('artistName') artistName?: string,
+    @Query('tourName') tourName?: string,
+    @Query('date') date?: string,
     @Query('p') p?: string,
   ) {
-    if (!artistName || !date) {
+    if (!artistName && !tourName) {
       throw new HttpException(
-        'artistName y date son requeridos',
+        'Se requiere artistName o tourName',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -27,6 +38,7 @@ export class SetlistController {
     try {
       return await this.setlistService.searchSetlist({
         artistName,
+        tourName,
         date,
         p: p ? parseInt(p, 10) : 1,
       });

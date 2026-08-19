@@ -14,18 +14,21 @@ export class SetlistService {
   ) {}
 
   async searchSetlist(params: {
-    artistName: string;
-    date: string; // dd-MM-yyyy
+    artistName?: string;
+    tourName?: string;
+    date?: string; // dd-MM-yyyy (opcional; solo para búsqueda de concierto concreto)
     p?: number;
   }) {
     const apiKey = this.config.get<string>('SETLIST_API_KEY') ?? '';
 
-    const query = new URLSearchParams({
-      artistName: params.artistName,
-      date: params.date,
+    const queryParams: Record<string, string> = {
       p: String(params.p ?? 1),
-    });
+    };
+    if (params.artistName) queryParams.artistName = params.artistName;
+    if (params.tourName) queryParams.tourName = params.tourName;
+    if (params.date) queryParams.date = params.date;
 
+    const query = new URLSearchParams(queryParams);
     const url = `${this.baseUrl}/search/setlists?${query.toString()}`;
 
     try {
