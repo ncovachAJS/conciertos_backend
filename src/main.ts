@@ -16,9 +16,19 @@ async function bootstrap() {
   // Cabeceras de seguridad HTTP (XSS, clickjacking, MIME sniffing, etc.)
   app.use(helmet());
 
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map((o) => o.trim()) ?? [];
+
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? [],
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    origin: (origin, callback) => {
+      // Las apps nativas (iOS/Android) no envían origin → siempre permitidas.
+      if (!origin) return callback(null, true);
+      // Cualquier localhost se permite (desarrollo web local).
+      if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
+      // Orígenes de producción configurados vía variable de entorno.
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      callback(new Error(`CORS: origen no permitido: ${origin}`));
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
   });
 
