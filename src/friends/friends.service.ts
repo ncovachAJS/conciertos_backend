@@ -169,9 +169,11 @@ export class FriendsService {
     if (!friends) throw new Error('No sois amigos');
 
     // Incluimos conciertos propios + conciertos en los que fue etiquetado,
-    // igual que el perfil propio del usuario.
+    // igual que el perfil propio del usuario. Se excluyen los que el dueño
+    // marcó como no visibles para amigos.
     const concerts = await this.prisma.concert.findMany({
       where: {
+        visibleToFriends: true,
         OR: [
           { userId: friendId },
           { participants: { some: { userId: friendId } } },
@@ -242,6 +244,7 @@ export class FriendsService {
       where: {
         userId: friendId,
         date: { gte: today },
+        visibleToFriends: true,
       },
       orderBy: { date: 'asc' },
       select: {
@@ -263,9 +266,11 @@ export class FriendsService {
     const friends = await this.areFriends(requesterId, friendId);
     if (!friends) throw new Error('No sois amigos');
 
-    // Incluimos propios + compartidos (etiquetados) del amigo
+    // Incluimos propios + compartidos (etiquetados) del amigo.
+    // Se excluyen los que el dueño marcó como no visibles para amigos.
     return this.prisma.concert.findMany({
       where: {
+        visibleToFriends: true,
         OR: [
           { userId: friendId },
           { participants: { some: { userId: friendId } } },

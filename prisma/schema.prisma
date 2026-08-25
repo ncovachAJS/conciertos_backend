@@ -68,6 +68,7 @@ model Concert {
   favorite         Boolean  @default(false)
   price            Float    @default(0)
   genre            String?
+  visibleToFriends Boolean  @default(true)
   userId           String
 
   user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)

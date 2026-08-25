@@ -148,6 +148,7 @@ export class ConcertsService {
         liked: dto.liked ?? false,
         favorite: dto.favorite ?? false,
         price: dto.price ?? 0,
+        visibleToFriends: dto.visibleToFriends ?? true,
         user: { connect: { id: userId } },
       },
       include: CONCERT_INCLUDE,
@@ -160,8 +161,10 @@ export class ConcertsService {
 
     this.logger.log(`Concierto creado: ${concert.name} (${concert.id})`);
 
-    // Notificar a amigos que añadiste un concierto
-    this.notificationsService.notifyFriendConcert(userId, concert.name ?? concert.artist, concert.id).catch(() => {});
+    // Notificar a amigos que añadiste un concierto — solo si es visible para ellos
+    if (concert.visibleToFriends) {
+      this.notificationsService.notifyFriendConcert(userId, concert.name ?? concert.artist, concert.id).catch(() => {});
+    }
 
     return this.findOne(concert.id);
   }
@@ -273,14 +276,14 @@ export class ConcertsService {
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.concert.findMany({
-        where: { userId: { in: friendIds } },
+        where: { userId: { in: friendIds }, visibleToFriends: true },
         orderBy: { createdAt: 'desc' },
         skip,
         take: safeLimit,
         include: CONCERT_INCLUDE,
       }),
       this.prisma.concert.count({
-        where: { userId: { in: friendIds } },
+        where: { userId: { in: friendIds }, visibleToFriends: true },
       }),
     ]);
 

@@ -114,6 +114,14 @@ export class CreateConcertDto {
   genre?: string;
 
   @ApiPropertyOptional({
+    default: true,
+    description: 'Si es false, el concierto no aparece en el feed ni en las estadísticas visibles para tus amigos',
+  })
+  @IsOptional()
+  @IsBoolean()
+  visibleToFriends?: boolean;
+
+  @ApiPropertyOptional({
     description: 'IDs de amigos a etiquetar en el concierto',
     type: [String],
   })
