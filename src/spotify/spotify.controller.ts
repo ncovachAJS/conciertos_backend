@@ -37,6 +37,23 @@ export class SpotifyController {
     return this.spotifyService.searchArtist(name);
   }
 
+  @Get('artists/search')
+  @ApiOperation({ summary: 'Busca varios artistas en Spotify para autocompletar' })
+  @ApiQuery({ name: 'q', description: 'Texto de búsqueda parcial', example: 'metal' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Máximo de resultados (1-20)', example: 8 })
+  @ApiResponse({ status: 200, description: 'Lista de artistas coincidentes.' })
+  async artistsSearch(
+    @Query('q') q: string,
+    @Query('limit') limit?: string,
+  ) {
+    if (!q?.trim()) {
+      throw new BadRequestException('El parámetro "q" es obligatorio');
+    }
+
+    const parsedLimit = limit ? parseInt(limit, 10) : 8;
+    return this.spotifyService.searchArtists(q, Number.isNaN(parsedLimit) ? 8 : parsedLimit);
+  }
+
   @Get('artist/:id/top-tracks')
   @ApiOperation({ summary: 'Canciones más populares de un artista (máx. 10)' })
   @ApiParam({ name: 'id', description: 'Spotify artist ID', example: '2ye2Wgw4gimLv2eAKyk1NB' })

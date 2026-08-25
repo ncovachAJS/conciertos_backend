@@ -74,6 +74,33 @@ export class SpotifyService {
   }
 
   /**
+   * Devuelve varias coincidencias de artista para autocompletar mientras
+   * el usuario escribe (a diferencia de searchArtist, que solo trae la mejor).
+   */
+  async searchArtists(query: string, limit = 8) {
+    if (!query?.trim()) return [];
+
+    await this.authenticate();
+
+    const cappedLimit = Math.min(Math.max(limit, 1), 20);
+    const result = await this.spotifyApi.searchArtists(query.trim(), {
+      limit: cappedLimit,
+    });
+
+    const items = result.body.artists?.items ?? [];
+
+    return items.map((artist) => ({
+      id: artist.id,
+      name: artist.name,
+      url: artist.external_urls.spotify,
+      image: (artist.images?.length ?? 0) > 0 ? artist.images[0].url : null,
+      followers: artist.followers?.total ?? 0,
+      genres: artist.genres ?? [],
+      popularity: artist.popularity ?? 0,
+    }));
+  }
+
+  /**
    * Devuelve las canciones más populares de un artista (máx. 10).
    *
    * Estrategia:
