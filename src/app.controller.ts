@@ -1,5 +1,4 @@
-import { Controller, Get, Header, Res } from '@nestjs/common';
-import { Response } from 'express';
+import { Controller, Get, Header } from '@nestjs/common';
 import { AppService } from './app.service';
 
 @Controller()
@@ -13,8 +12,8 @@ export class AppController {
 
   @Get('delete-account')
   @Header('Content-Type', 'text/html; charset=utf-8')
-  deleteAccount(@Res() res: Response): void {
-    res.send(`<!DOCTYPE html>
+  deleteAccount(): string {
+    return `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -52,6 +51,6 @@ export class AppController {
     <strong>Datos que se conservan:</strong> ninguno. La eliminación es completa e irreversible.
   </div>
 </body>
-</html>`);
+</html>`;
   }
 }
