@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
@@ -31,6 +33,7 @@ if (!getApps().length) {
 }
 
 @Module({
+  controllers: [AppController],
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRoot([
@@ -50,6 +53,7 @@ if (!getApps().length) {
     SetlistModule,
   ],
   providers: [
+    AppService,
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
