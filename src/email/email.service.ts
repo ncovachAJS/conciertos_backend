@@ -3,9 +3,32 @@ import { Injectable, Logger } from '@nestjs/common';
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly apiKey = process.env.RESEND_API_KEY!;
-  private readonly from = 'onboarding@resend.dev';
+  private readonly apiKey = process.env.BREVO_API_KEY!;
+  private readonly senderEmail = process.env.BREVO_SENDER_EMAIL!;
+  private readonly senderName = process.env.BREVO_SENDER_NAME ?? 'La Vida en Directo';
   private readonly appName = 'La Vida en Directo';
+
+  private async send(to: string, subject: string, html: string): Promise<void> {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': this.apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: this.senderName, email: this.senderEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      this.logger.error(`Brevo error: ${error}`);
+      throw new Error('No se pudo enviar el email');
+    }
+  }
 
   async sendPasswordReset(email: string, token: string): Promise<void> {
     const backendUrl =
@@ -30,26 +53,23 @@ export class EmailService {
       </div>
     `;
 
-    const response = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: `${this.appName} <${this.from}>`,
-        to: [email],
-        subject: 'Restablece tu contraseña',
-        html,
-      }),
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      this.logger.error(`Resend error: ${error}`);
-      throw new Error('No se pudo enviar el email');
-    }
-
+    await this.send(email, 'Restablece tu contraseña', html);
     this.logger.log(`Email de recuperación enviado a ${email}`);
+  }
+
+  async sendWelcome(email: string, name: string): Promise<void> {
+    const html = `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+        <h2 style="color:#E53935">🎸 ${this.appName}</h2>
+        <p>Hola ${name},</p>
+        <p>¡Bienvenido/a a <strong>${this.appName}</strong>! Ya puedes empezar a registrar tus conciertos y revivir cada momento.</p>
+        <p style="color:#888;font-size:13px">
+          Si no creaste esta cuenta, ignora este email.
+        </p>
+      </div>
+    `;
+
+    await this.send(email, `¡Bienvenido/a a ${this.appName}!`, html);
+    this.logger.log(`Email de bienvenida enviado a ${email}`);
   }
 }

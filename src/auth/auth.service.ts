@@ -34,6 +34,7 @@ export class AuthService {
     });
     const memberNumber = await this.usersService.getMemberNumber(user.id);
     const token = this.jwtService.sign({ sub: user.id, email: user.email });
+    this.emailService.sendWelcome(user.email, user.name).catch(() => {});
     return {
       token,
       user: {
