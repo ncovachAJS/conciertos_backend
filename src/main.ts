@@ -20,10 +20,13 @@ async function bootstrap() {
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Las apps nativas (iOS/Android) no envían origin → siempre permitidas.
-      if (!origin) return callback(null, true);
+      // Las apps nativas (iOS/Android) y formularios HTML no envían origin → siempre permitidos.
+      // 'null' (string) lo envía el navegador en form POST desde misma página.
+      if (!origin || origin === 'null') return callback(null, true);
       // Cualquier localhost se permite (desarrollo web local).
       if (/^https?:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
+      // El propio backend puede hacer POST a sí mismo (reset-password-form).
+      if (origin === 'https://conciertos-backend.onrender.com') return callback(null, true);
       // Orígenes de producción configurados vía variable de entorno.
       if (allowedOrigins.includes(origin)) return callback(null, true);
       callback(new Error(`CORS: origen no permitido: ${origin}`));
