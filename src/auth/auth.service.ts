@@ -42,6 +42,7 @@ export class AuthService {
         email: user.email,
         avatarUrl: user.avatarUrl ?? null,
         isPro: user.isPro ?? false,
+        showSpotify: user.showSpotify ?? false,
         memberNumber,
       },
     };
@@ -66,6 +67,7 @@ export class AuthService {
         email: user.email,
         avatarUrl: user.avatarUrl ?? null,
         isPro: user.isPro ?? false,
+        showSpotify: user.showSpotify ?? false,
         memberNumber,
       },
     };
@@ -80,7 +82,8 @@ export class AuthService {
       name: user.name,
       email: user.email,
       avatarUrl: user.avatarUrl ?? null,
-      isPro: user.isPro ?? false,   // ← faltaba este campo
+      isPro: user.isPro ?? false,
+      showSpotify: user.showSpotify ?? false,
       memberNumber,
     };
   }
