@@ -100,7 +100,8 @@ export class AuthController {
 </head>
 <body>
   <div class="card">
-    <div class="logo">🎸 LA VIDA <span>EN DIRECTO</span></div>
+    <div id="card">
+    <div class="logo">LA VIDA <span>EN DIRECTO</span></div>
     <h1>Nueva contraseña</h1>
     <p>Introduce tu nueva contraseña para recuperar el acceso.</p>
     <form id="form">
@@ -113,52 +114,57 @@ export class AuthController {
       <div class="msg err" id="err"></div>
     </form>
   </div>
+  </div>
   <script>
-    async function submitForm() {
-      const pass = document.getElementById('pass').value;
-      const confirm = document.getElementById('confirm').value;
-      const btn = document.getElementById('btn');
-      const err = document.getElementById('err');
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('btn').addEventListener('click', function() {
+        var pass = document.getElementById('pass').value;
+        var confirm = document.getElementById('confirm').value;
+        var btn = document.getElementById('btn');
+        var err = document.getElementById('err');
 
-      if (!pass || pass.length < 6) {
-        err.textContent = '❌ La contraseña debe tener al menos 6 caracteres';
-        err.style.display = 'block';
-        return;
-      }
+        err.style.display = 'none';
 
-      if (pass !== confirm) {
-        err.textContent = '❌ Las contraseñas no coinciden';
-        err.style.display = 'block';
-        return;
-      }
+        if (!pass || pass.length < 6) {
+          err.textContent = 'La contrasena debe tener al menos 6 caracteres';
+          err.style.display = 'block';
+          return;
+        }
 
-      btn.textContent = 'Guardando...';
-      btn.disabled = true;
-      err.style.display = 'none';
+        if (pass !== confirm) {
+          err.textContent = 'Las contrasenas no coinciden';
+          err.style.display = 'block';
+          return;
+        }
 
-      try {
-        const res = await fetch('/auth/reset-password', {
+        btn.textContent = 'Guardando...';
+        btn.disabled = true;
+
+        fetch('/auth/reset-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: '${token}', password: pass }),
-        });
-        const data = await res.json();
-        if (res.ok) {
-          document.getElementById('form').innerHTML =
-            '<div class="msg ok" style="display:block">✅ ¡Contraseña actualizada! Ya puedes iniciar sesión en la app.</div>';
-        } else {
-          err.textContent = '❌ ' + (data.message ?? 'Error al actualizar');
+          body: JSON.stringify({ token: '${token}', password: pass })
+        })
+        .then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
+        .then(function(result) {
+          if (result.ok) {
+            document.getElementById('card').innerHTML =
+              '<div style="color:#a5d6a7;background:#1b5e20;padding:20px;border-radius:12px;font-size:16px">Contrasena actualizada. Ya puedes iniciar sesion en la app.</div>';
+          } else {
+            err.textContent = result.data.message || 'Error al actualizar';
+            err.style.display = 'block';
+            btn.textContent = 'Guardar contrasena';
+            btn.disabled = false;
+          }
+        })
+        .catch(function() {
+          err.textContent = 'Error de conexion. Intentalo de nuevo.';
           err.style.display = 'block';
-          btn.textContent = 'Guardar contraseña';
+          btn.textContent = 'Guardar contrasena';
           btn.disabled = false;
-        }
-      } catch {
-        err.textContent = '❌ Error de conexión. Inténtalo de nuevo.';
-        err.style.display = 'block';
-        btn.textContent = 'Guardar contraseña';
-        btn.disabled = false;
-      }
-    }
+        });
+      });
+    });
   </script>
 </body>
 </html>`;
