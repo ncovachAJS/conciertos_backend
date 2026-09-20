@@ -108,19 +108,23 @@ export class AuthController {
       <input type="password" id="pass" placeholder="Mínimo 6 caracteres" required minlength="6">
       <label>Confirmar contraseña</label>
       <input type="password" id="confirm" placeholder="Repite la contraseña" required>
-      <button type="submit" id="btn">Guardar contraseña</button>
+      <button type="button" id="btn" onclick="submitForm()">Guardar contraseña</button>
       <div class="msg ok" id="ok">✅ ¡Contraseña actualizada! Ya puedes iniciar sesión en la app.</div>
       <div class="msg err" id="err"></div>
     </form>
   </div>
   <script>
-    document.getElementById('form').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    async function submitForm() {
       const pass = document.getElementById('pass').value;
       const confirm = document.getElementById('confirm').value;
       const btn = document.getElementById('btn');
-      const ok = document.getElementById('ok');
       const err = document.getElementById('err');
+
+      if (!pass || pass.length < 6) {
+        err.textContent = '❌ La contraseña debe tener al menos 6 caracteres';
+        err.style.display = 'block';
+        return;
+      }
 
       if (pass !== confirm) {
         err.textContent = '❌ Las contraseñas no coinciden';
@@ -140,7 +144,7 @@ export class AuthController {
         });
         const data = await res.json();
         if (res.ok) {
-          document.getElementById('form').innerHTML = 
+          document.getElementById('form').innerHTML =
             '<div class="msg ok" style="display:block">✅ ¡Contraseña actualizada! Ya puedes iniciar sesión en la app.</div>';
         } else {
           err.textContent = '❌ ' + (data.message ?? 'Error al actualizar');
@@ -154,7 +158,7 @@ export class AuthController {
         btn.textContent = 'Guardar contraseña';
         btn.disabled = false;
       }
-    });
+    }
   </script>
 </body>
 </html>`;
