@@ -70,101 +70,73 @@ export class AuthController {
       return;
     }
 
-    const html = `
-<!DOCTYPE html>
+    const safeToken = token;
+    const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Nueva contraseña · La Vida en Directo</title>
+  <title>Nueva contrasena</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:system-ui,sans-serif;background:#121212;color:#fff;
-         display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+    body{font-family:system-ui,sans-serif;background:#121212;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
     .card{background:#1e1e1e;border-radius:20px;padding:36px;width:100%;max-width:400px}
     h1{font-size:22px;margin-bottom:8px}
     p{color:#aaa;font-size:14px;margin-bottom:28px}
     label{display:block;font-size:13px;color:#aaa;margin-bottom:6px}
-    input{width:100%;padding:14px;background:#2a2a2a;border:none;border-radius:12px;
-          color:#fff;font-size:16px;margin-bottom:16px;outline:none}
+    input{width:100%;padding:14px;background:#2a2a2a;border:none;border-radius:12px;color:#fff;font-size:16px;margin-bottom:16px;outline:none}
     input:focus{box-shadow:0 0 0 2px #E53935}
-    button{width:100%;padding:16px;background:#E53935;color:#fff;border:none;
-           border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer}
-    button:hover{background:#c62828}
+    button{width:100%;padding:16px;background:#E53935;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer}
     .msg{margin-top:16px;padding:14px;border-radius:10px;font-size:14px;display:none}
     .ok{background:#1b5e20;color:#a5d6a7}
     .err{background:#4e0000;color:#ef9a9a}
-    .logo{font-size:28px;font-weight:900;margin-bottom:24px}
-    .logo span{color:#E53935}
   </style>
 </head>
 <body>
-  <div class="card">
-    <div id="card">
-    <div class="logo">LA VIDA <span>EN DIRECTO</span></div>
-    <h1>Nueva contraseña</h1>
-    <p>Introduce tu nueva contraseña para recuperar el acceso.</p>
-    <form id="form">
-      <label>Nueva contraseña</label>
-      <input type="password" id="pass" placeholder="Mínimo 6 caracteres" required minlength="6">
-      <label>Confirmar contraseña</label>
-      <input type="password" id="confirm" placeholder="Repite la contraseña" required>
-      <button type="button" id="btn" onclick="submitForm()">Guardar contraseña</button>
-      <div class="msg ok" id="ok">✅ ¡Contraseña actualizada! Ya puedes iniciar sesión en la app.</div>
-      <div class="msg err" id="err"></div>
-    </form>
-  </div>
+  <div class="card" id="card">
+    <h1>Nueva contrasena</h1>
+    <p>Introduce tu nueva contrasena para recuperar el acceso.</p>
+    <label>Nueva contrasena</label>
+    <input type="password" id="pass" placeholder="Minimo 6 caracteres">
+    <label>Confirmar contrasena</label>
+    <input type="password" id="confirm" placeholder="Repite la contrasena">
+    <button id="btn">Guardar contrasena</button>
+    <div class="msg err" id="err"></div>
   </div>
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      document.getElementById('btn').addEventListener('click', function() {
-        var pass = document.getElementById('pass').value;
-        var confirm = document.getElementById('confirm').value;
-        var btn = document.getElementById('btn');
-        var err = document.getElementById('err');
-
-        err.style.display = 'none';
-
-        if (!pass || pass.length < 6) {
-          err.textContent = 'La contrasena debe tener al menos 6 caracteres';
-          err.style.display = 'block';
-          return;
-        }
-
-        if (pass !== confirm) {
-          err.textContent = 'Las contrasenas no coinciden';
-          err.style.display = 'block';
-          return;
-        }
-
-        btn.textContent = 'Guardando...';
-        btn.disabled = true;
-
-        fetch('/auth/reset-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ token: '${token}', password: pass })
-        })
-        .then(function(res) { return res.json().then(function(data) { return { ok: res.ok, data: data }; }); })
-        .then(function(result) {
-          if (result.ok) {
-            document.getElementById('card').innerHTML =
-              '<div style="color:#a5d6a7;background:#1b5e20;padding:20px;border-radius:12px;font-size:16px">Contrasena actualizada. Ya puedes iniciar sesion en la app.</div>';
-          } else {
-            err.textContent = result.data.message || 'Error al actualizar';
-            err.style.display = 'block';
-            btn.textContent = 'Guardar contrasena';
-            btn.disabled = false;
-          }
-        })
-        .catch(function() {
-          err.textContent = 'Error de conexion. Intentalo de nuevo.';
+    var TOKEN = '${safeToken}';
+    document.getElementById('btn').onclick = function() {
+      var pass = document.getElementById('pass').value;
+      var conf = document.getElementById('confirm').value;
+      var err  = document.getElementById('err');
+      var btn  = document.getElementById('btn');
+      err.style.display = 'none';
+      if (pass.length < 6) { err.textContent = 'Minimo 6 caracteres'; err.style.display = 'block'; return; }
+      if (pass !== conf)   { err.textContent = 'Las contrasenas no coinciden'; err.style.display = 'block'; return; }
+      btn.textContent = 'Guardando...';
+      btn.disabled = true;
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', '/auth/reset-password');
+      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.onload = function() {
+        var data = JSON.parse(xhr.responseText);
+        if (xhr.status === 200 || xhr.status === 201) {
+          document.getElementById('card').innerHTML = '<p style="color:#a5d6a7;font-size:16px">Contrasena actualizada. Ya puedes iniciar sesion en la app.</p>';
+        } else {
+          err.textContent = data.message || 'Error al actualizar';
           err.style.display = 'block';
           btn.textContent = 'Guardar contrasena';
           btn.disabled = false;
-        });
-      });
-    });
+        }
+      };
+      xhr.onerror = function() {
+        err.textContent = 'Error de conexion';
+        err.style.display = 'block';
+        btn.textContent = 'Guardar contrasena';
+        btn.disabled = false;
+      };
+      xhr.send(JSON.stringify({ token: TOKEN, password: pass }));
+    };
   </script>
 </body>
 </html>`;
