@@ -59,6 +59,31 @@ export class AuthController {
     return this.authService.resetPassword(token, password);
   }
 
+  /** Endpoint para el formulario HTML — recibe form data y devuelve HTML */
+  @Post('reset-password-form')
+  async resetPasswordForm(
+    @Body('token') token: string,
+    @Body('password') password: string,
+    @Body('confirm') confirm: string,
+    @Res() res: Response,
+  ) {
+    const style = `<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:system-ui,sans-serif;background:#121212;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}.card{background:#1e1e1e;border-radius:20px;padding:36px;width:100%;max-width:400px}p{font-size:16px;line-height:1.5}</style>`;
+
+    if (!password || password.length < 6) {
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="UTF-8">${style}</head><body><div class="card"><p style="color:#ef9a9a">La contrasena debe tener al menos 6 caracteres.</p><br><a href="javascript:history.back()" style="color:#E53935">Volver</a></div></body></html>`);
+    }
+    if (password !== confirm) {
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="UTF-8">${style}</head><body><div class="card"><p style="color:#ef9a9a">Las contrasenas no coinciden.</p><br><a href="javascript:history.back()" style="color:#E53935">Volver</a></div></body></html>`);
+    }
+
+    try {
+      await this.authService.resetPassword(token, password);
+      return res.send(`<!DOCTYPE html><html><head><meta charset="UTF-8">${style}</head><body><div class="card"><p style="color:#a5d6a7">Contrasena actualizada correctamente. Ya puedes iniciar sesion en la app.</p></div></body></html>`);
+    } catch (e: any) {
+      return res.status(400).send(`<!DOCTYPE html><html><head><meta charset="UTF-8">${style}</head><body><div class="card"><p style="color:#ef9a9a">${e.message ?? 'Error al actualizar la contrasena.'}</p><br><a href="javascript:history.back()" style="color:#E53935">Volver</a></div></body></html>`);
+    }
+  }
+
   /** Página web servida desde el backend para introducir la nueva contraseña */
   @Get('reset-password-page')
   resetPage(@Query('token') token: string, @Res() res: Response) {
@@ -70,7 +95,6 @@ export class AuthController {
       return;
     }
 
-    const safeToken = token;
     const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -85,59 +109,22 @@ export class AuthController {
     p{color:#aaa;font-size:14px;margin-bottom:28px}
     label{display:block;font-size:13px;color:#aaa;margin-bottom:6px}
     input{width:100%;padding:14px;background:#2a2a2a;border:none;border-radius:12px;color:#fff;font-size:16px;margin-bottom:16px;outline:none}
-    input:focus{box-shadow:0 0 0 2px #E53935}
     button{width:100%;padding:16px;background:#E53935;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer}
-    .msg{margin-top:16px;padding:14px;border-radius:10px;font-size:14px;display:none}
-    .ok{background:#1b5e20;color:#a5d6a7}
-    .err{background:#4e0000;color:#ef9a9a}
   </style>
 </head>
 <body>
-  <div class="card" id="card">
+  <div class="card">
     <h1>Nueva contrasena</h1>
     <p>Introduce tu nueva contrasena para recuperar el acceso.</p>
-    <label>Nueva contrasena</label>
-    <input type="password" id="pass" placeholder="Minimo 6 caracteres">
-    <label>Confirmar contrasena</label>
-    <input type="password" id="confirm" placeholder="Repite la contrasena">
-    <button id="btn">Guardar contrasena</button>
-    <div class="msg err" id="err"></div>
+    <form method="POST" action="/auth/reset-password-form">
+      <input type="hidden" name="token" value="${token}">
+      <label>Nueva contrasena</label>
+      <input type="password" name="password" placeholder="Minimo 6 caracteres" required minlength="6">
+      <label>Confirmar contrasena</label>
+      <input type="password" name="confirm" placeholder="Repite la contrasena" required>
+      <button type="submit">Guardar contrasena</button>
+    </form>
   </div>
-  <script>
-    var TOKEN = '${safeToken}';
-    document.getElementById('btn').onclick = function() {
-      var pass = document.getElementById('pass').value;
-      var conf = document.getElementById('confirm').value;
-      var err  = document.getElementById('err');
-      var btn  = document.getElementById('btn');
-      err.style.display = 'none';
-      if (pass.length < 6) { err.textContent = 'Minimo 6 caracteres'; err.style.display = 'block'; return; }
-      if (pass !== conf)   { err.textContent = 'Las contrasenas no coinciden'; err.style.display = 'block'; return; }
-      btn.textContent = 'Guardando...';
-      btn.disabled = true;
-      var xhr = new XMLHttpRequest();
-      xhr.open('POST', '/auth/reset-password');
-      xhr.setRequestHeader('Content-Type', 'application/json');
-      xhr.onload = function() {
-        var data = JSON.parse(xhr.responseText);
-        if (xhr.status === 200 || xhr.status === 201) {
-          document.getElementById('card').innerHTML = '<p style="color:#a5d6a7;font-size:16px">Contrasena actualizada. Ya puedes iniciar sesion en la app.</p>';
-        } else {
-          err.textContent = data.message || 'Error al actualizar';
-          err.style.display = 'block';
-          btn.textContent = 'Guardar contrasena';
-          btn.disabled = false;
-        }
-      };
-      xhr.onerror = function() {
-        err.textContent = 'Error de conexion';
-        err.style.display = 'block';
-        btn.textContent = 'Guardar contrasena';
-        btn.disabled = false;
-      };
-      xhr.send(JSON.stringify({ token: TOKEN, password: pass }));
-    };
-  </script>
 </body>
 </html>`;
 
