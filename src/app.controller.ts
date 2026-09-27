@@ -54,6 +54,45 @@ export class AppController {
 </html>`;
   }
 
+  @Get('support')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  support(): string {
+    return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Soporte — La Vida en Directo</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 640px; margin: 60px auto; padding: 0 24px; color: #1a1a1a; line-height: 1.6; }
+    h1 { font-size: 1.8rem; margin-bottom: 8px; }
+    h2 { font-size: 1.1rem; margin-top: 32px; color: #333; }
+    p { color: #444; }
+    ul { color: #444; padding-left: 20px; }
+    li { margin-bottom: 8px; }
+    a { color: #e53935; }
+  </style>
+</head>
+<body>
+  <h1>Soporte</h1>
+  <p><strong>La Vida en Directo</strong> — ¿Necesitas ayuda?</p>
+
+  <h2>Contacto</h2>
+  <p>Escríbenos a <a href="mailto:ncovach@gmail.com">ncovach@gmail.com</a> y te responderemos lo antes posible.</p>
+
+  <h2>Preguntas frecuentes</h2>
+  <ul>
+    <li><strong>¿Cómo elimino mi cuenta?</strong> Ve a <a href="/delete-account">/delete-account</a> para instrucciones.</li>
+    <li><strong>¿Cómo conecto mi Spotify?</strong> Ve a Perfil → Conectar Spotify dentro de la app.</li>
+    <li><strong>¿Cómo reporto un error o sugerencia?</strong> Envía un email a <a href="mailto:ncovach@gmail.com">ncovach@gmail.com</a> describiendo el problema.</li>
+  </ul>
+
+  <h2>Política de privacidad</h2>
+  <p>Puedes consultarla en <a href="/privacy-policy">/privacy-policy</a>.</p>
+</body>
+</html>`;
+  }
+
   @Get('privacy-policy')
   @Header('Content-Type', 'text/html; charset=utf-8')
   privacyPolicy(): string {
