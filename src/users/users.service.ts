@@ -18,7 +18,12 @@ export class UsersService {
   }
 
   async findByEmail(email: string) {
-    return this.prisma.user.findUnique({ where: { email } });
+    // Búsqueda insensible a mayúsculas/minúsculas: el email se guarda tal
+    // cual se escribió al registrarse, pero los proveedores de correo no
+    // distinguen mayúsculas, así que login/reset no deberían hacerlo tampoco.
+    return this.prisma.user.findFirst({
+      where: { email: { equals: email.trim(), mode: 'insensitive' } },
+    });
   }
 
   async findById(id: string) {
