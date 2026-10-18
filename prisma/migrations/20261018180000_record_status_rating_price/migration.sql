@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Record" ADD COLUMN     "condition" TEXT,
+ADD COLUMN     "price" DOUBLE PRECISION,
+ADD COLUMN     "rating" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "status" TEXT NOT NULL DEFAULT 'OWNED';

@@ -45,6 +45,7 @@ model User {
   deviceTokens          DeviceToken[]
   wantToAttend          WantToAttend[]
   comments              ConcertComment[]
+  records               Record[]
 }
 
 model Concert {
@@ -210,4 +211,33 @@ model DeviceToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model Record {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  artist    String
+  // 'VINYL' | 'CD' | 'OTHER'
+  format    String   @default("VINYL")
+  year      Int?
+  label     String?
+  country   String?
+  coverUrl  String?
+  discogsId Int?     // ID de la release en Discogs (null si se añadió a mano)
+  notes     String?
+  // 'OWNED' (en la colección) | 'WISHLIST' (lista de deseos)
+  status    String   @default("OWNED")
+  // Estado físico (escala Goldmine): M, NM, VG+, VG, G, P
+  condition String?
+  rating    Int      @default(0) // 0 = sin valorar, 1-5
+  price     Float?   // lo que pagó el usuario
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Un usuario no puede tener dos veces la misma release de Discogs
+  @@unique([userId, discogsId])
+  @@index([userId, createdAt])
 }

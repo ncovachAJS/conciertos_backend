@@ -1,0 +1,19 @@
+# Base de datos local para desarrollo. Nunca toca producción.
+#   npm run db:up       → arranca Postgres en localhost:5433
+#   npm run db:migrate  → aplica migraciones (prisma migrate dev)
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: conciertos_db_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: conciertos
+      POSTGRES_PASSWORD: conciertos
+      POSTGRES_DB: conciertos_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - conciertos_db_dev:/var/lib/postgresql/data
+
+volumes:
+  conciertos_db_dev:
