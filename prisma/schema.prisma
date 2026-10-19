@@ -13,9 +13,9 @@ model User {
   email    String @unique
   password String
 
-  avatarUrl    String?
-  isPro        Boolean @default(false)
-  showSpotify  Boolean @default(false)
+  avatarUrl   String?
+  isPro       Boolean @default(false)
+  showSpotify Boolean @default(false)
 
   resetToken       String?   @unique
   resetTokenExpiry DateTime?
@@ -28,31 +28,32 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  concerts     Concert[]
-  photos       ConcertPhoto[] // fotos subidas por este usuario
+  concerts Concert[]
+  photos   ConcertPhoto[] // fotos subidas por este usuario
 
   // Amistades
   sentRequests     Friendship[] @relation("FriendshipSender")
   receivedRequests Friendship[] @relation("FriendshipReceiver")
 
   // Conciertos en los que está etiquetado
-  concertTags  ConcertParticipant[]
-  photoTags    PhotoParticipant[]
+  concertTags ConcertParticipant[]
+  photoTags   PhotoParticipant[]
 
   // Notificaciones
-  notifications         Notification[] @relation("NotificationUser")
-  sentNotifications     Notification[] @relation("NotificationSender")
-  deviceTokens          DeviceToken[]
-  wantToAttend          WantToAttend[]
-  comments              ConcertComment[]
-  records               Record[]
+  notifications     Notification[]     @relation("NotificationUser")
+  sentNotifications Notification[]     @relation("NotificationSender")
+  deviceTokens      DeviceToken[]
+  wantToAttend      WantToAttend[]
+  comments          ConcertComment[]
+  records           Record[]
+  discogsConnection DiscogsConnection?
 }
 
 model Concert {
-  id          String   @id @default(cuid())
-  artist      String
-  date        DateTime
-  imageUrl    String?
+  id               String   @id @default(cuid())
+  artist           String
+  date             DateTime
+  imageUrl         String?
   rating           Int      @default(0)
   soundRating      Int      @default(0)
   atmosphereRating Int      @default(0)
@@ -100,8 +101,8 @@ model ConcertPhoto {
   createdAt DateTime @default(now())
   userId    String?
 
-  concert      Concert              @relation(fields: [concertId], references: [id], onDelete: Cascade)
-  user         User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  concert      Concert            @relation(fields: [concertId], references: [id], onDelete: Cascade)
+  user         User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
   participants PhotoParticipant[]
 
   @@index([concertId])
@@ -142,26 +143,26 @@ enum FriendshipStatus {
 }
 
 enum NotificationType {
-  CONCERT_TAG      // te etiquetaron en un concierto
-  PHOTO_TAG        // te etiquetaron en una foto
-  FRIEND_REQUEST   // solicitud de amistad recibida
-  FRIEND_ACCEPTED  // solicitud aceptada
-  FRIEND_CONCERT   // un amigo añadió un concierto
-  CONCERT_COMMENT  // alguien comentó en tu concierto
+  CONCERT_TAG // te etiquetaron en un concierto
+  PHOTO_TAG // te etiquetaron en una foto
+  FRIEND_REQUEST // solicitud de amistad recibida
+  FRIEND_ACCEPTED // solicitud aceptada
+  FRIEND_CONCERT // un amigo añadió un concierto
+  CONCERT_COMMENT // alguien comentó en tu concierto
 }
 
 model Notification {
   id        String           @id @default(cuid())
-  userId    String           // destinatario
-  senderId  String           // quien genera la notif
+  userId    String // destinatario
+  senderId  String // quien genera la notif
   type      NotificationType
   title     String
   body      String
   read      Boolean          @default(false)
-  data      Json?            // metadata extra (concertId, photoId...)
+  data      Json? // metadata extra (concertId, photoId...)
   createdAt DateTime         @default(now())
 
-  user   User @relation("NotificationUser",   fields: [userId],   references: [id], onDelete: Cascade)
+  user   User @relation("NotificationUser", fields: [userId], references: [id], onDelete: Cascade)
   sender User @relation("NotificationSender", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@index([userId, read])
@@ -171,7 +172,7 @@ model Notification {
 model WantToAttend {
   id        String   @id @default(cuid())
   userId    String
-  eventId   String   // ID de Ticketmaster
+  eventId   String // ID de Ticketmaster
   artist    String
   venue     String
   city      String
@@ -205,7 +206,7 @@ model DeviceToken {
   id        String   @id @default(cuid())
   userId    String
   token     String   @unique
-  platform  String   // 'android' | 'ios'
+  platform  String // 'android' | 'ios'
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -224,14 +225,14 @@ model Record {
   label     String?
   country   String?
   coverUrl  String?
-  discogsId Int?     // ID de la release en Discogs (null si se añadió a mano)
+  discogsId Int? // ID de la release en Discogs (null si se añadió a mano)
   notes     String?
   // 'OWNED' (en la colección) | 'WISHLIST' (lista de deseos)
   status    String   @default("OWNED")
   // Estado físico (escala Goldmine): M, NM, VG+, VG, G, P
   condition String?
   rating    Int      @default(0) // 0 = sin valorar, 1-5
-  price     Float?   // lo que pagó el usuario
+  price     Float? // lo que pagó el usuario
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -240,4 +241,16 @@ model Record {
   // Un usuario no puede tener dos veces la misma release de Discogs
   @@unique([userId, discogsId])
   @@index([userId, createdAt])
+}
+
+// Cuenta de Discogs vinculada por OAuth 1.0a. Los tokens se guardan cifrados (AES-256-GCM).
+model DiscogsConnection {
+  userId       String   @id
+  username     String
+  accessToken  String
+  accessSecret String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

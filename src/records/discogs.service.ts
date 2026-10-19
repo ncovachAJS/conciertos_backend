@@ -151,14 +151,14 @@ export class DiscogsService {
     };
   }
 
-  private mapFormat(formats: string[]): DiscogsFormat {
+  mapFormat(formats: string[]): DiscogsFormat {
     const f = formats.map((x) => x.toLowerCase());
     if (f.includes('vinyl') || f.includes('lp')) return 'VINYL';
     if (f.includes('cd')) return 'CD';
     return 'OTHER';
   }
 
-  private joinArtists(artists: any[] | undefined): string {
+  joinArtists(artists: any[] | undefined): string {
     // Discogs añade "(2)" para desambiguar artistas homónimos
     return (artists ?? [])
       .map((a) => String(a.name).replace(/\s\(\d+\)$/, ''))
