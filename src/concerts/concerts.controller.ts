@@ -26,6 +26,7 @@ import { CreateConcertDto } from './dto/create-concert.dto';
 import { UpdateConcertDto } from './dto/update-concert.dto';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { parseIntParam } from '../common/utils/parse-int';
 
 @ApiBearerAuth('JWT')
 @UseGuards(JwtAuthGuard)
@@ -46,8 +47,8 @@ export class ConcertsController {
   ) {
     return this.concertsService.findFriendsActivity(
       req.user.id,
-      page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 20,
+      parseIntParam(page, 1),
+      parseIntParam(limit, 20, { max: 100 }),
     );
   }
 
@@ -62,8 +63,8 @@ export class ConcertsController {
     @Query('limit') limit?: string,
   ) {
     return this.concertsService.findAll(req.user.id, {
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 50,
+      page: parseIntParam(page, 1),
+      limit: parseIntParam(limit, 50, { max: 200 }),
     });
   }
 

@@ -14,6 +14,7 @@ import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
 
@@ -22,14 +23,16 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   // Límite estricto en registro: 5 intentos por minuto para prevenir bots
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Throttle({ global: { ttl: 60_000, limit: 5 } })
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
-  // Límite estricto en login: 5 intentos por minuto para prevenir fuerza bruta
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  // Límite en login: 10 intentos por minuto y por IP para frenar la fuerza bruta
+  // sin molestar a quien comparte wifi. La clave debe llamarse como el throttler
+  // registrado en AppModule ('global'); con otro nombre el límite se ignora.
+  @Throttle({ global: { ttl: 60_000, limit: 10 } })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto.email, dto.password);
@@ -45,21 +48,20 @@ export class AuthController {
   // ── Password reset ──────────────────────────────────────────────────────
 
   // Límite estricto en recuperación: 5 intentos por minuto para evitar enumeración de emails
-  @Throttle({ default: { ttl: 60_000, limit: 5 } })
+  @Throttle({ global: { ttl: 60_000, limit: 5 } })
   @Post('forgot-password')
   forgotPassword(@Body('email') email: string) {
     return this.authService.forgotPassword(email);
   }
 
+  @Throttle({ global: { ttl: 60_000, limit: 5 } })
   @Post('reset-password')
-  resetPassword(
-    @Body('token') token: string,
-    @Body('password') password: string,
-  ) {
-    return this.authService.resetPassword(token, password);
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.password);
   }
 
   /** Endpoint para el formulario HTML — recibe form data y devuelve HTML */
+  @Throttle({ global: { ttl: 60_000, limit: 5 } })
   @Post('reset-password-form')
   async resetPasswordForm(
     @Body('token') token: string,

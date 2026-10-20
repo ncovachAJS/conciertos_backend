@@ -4,9 +4,14 @@ import {
   Query,
   HttpException,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { SetlistService } from './setlist.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { parseIntParam } from '../common/utils/parse-int';
 
+// Solo usuarios con sesión: el endpoint gasta la cuota de la API key de setlist.fm
+@UseGuards(JwtAuthGuard)
 @Controller('setlist')
 export class SetlistController {
   constructor(private readonly setlistService: SetlistService) {}
@@ -40,7 +45,7 @@ export class SetlistController {
         artistName,
         tourName,
         date,
-        p: p ? parseInt(p, 10) : 1,
+        p: parseIntParam(p, 1),
       });
     } catch (err: any) {
       const status = err?.status ?? HttpStatus.BAD_GATEWAY;

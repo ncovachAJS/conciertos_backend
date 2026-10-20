@@ -103,12 +103,12 @@ export class SpotifyService {
   /**
    * Devuelve las canciones más populares de un artista (máx. 10).
    *
-   * Estrategia:
-   * 1. GET /artists/{id}/albums  → álbumes recientes del artista (Client Credentials ✓)
-   * 2. GET /albums?ids=...       → detalles de los álbumes (incluye popularity de tracks)
-   * 3. Ordena todos los tracks por popularity y devuelve el top 10
+   * Estrategia: /artists/{id}/top-tracks requiere OAuth de usuario desde 2024
+   * (403 con Client Credentials), así que se usa la búsqueda de canciones por el
+   * NOMBRE del artista y se ordena el resultado por popularity (top 10).
    *
-   * Nota: /artists/{id}/top-tracks requiere OAuth de usuario desde 2024 (403 con CC).
+   * Limitación: al buscar por nombre, pueden colarse canciones de otros artistas
+   * con nombre parecido; no equivale exactamente a las "más populares" del artista.
    */
   async getArtistTopTracks(artistId: string, artistName: string, market = 'ES') {
     const id = artistId?.trim() ?? '';

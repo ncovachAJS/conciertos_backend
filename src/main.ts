@@ -13,6 +13,13 @@ async function bootstrap() {
   }
   const app = await NestFactory.create(AppModule);
 
+  // Detrás del proxy de Render, sin esto req.ip es siempre la IP del proxy y todos
+  // los usuarios comparten el mismo contador de límites. Solo en producción para que
+  // en local no se pueda falsear la IP con la cabecera X-Forwarded-For.
+  if (process.env.NODE_ENV === 'production') {
+    app.getHttpAdapter().getInstance().set('trust proxy', 1);
+  }
+
   // Cabeceras de seguridad HTTP (XSS, clickjacking, MIME sniffing, etc.)
   app.use(helmet());
 

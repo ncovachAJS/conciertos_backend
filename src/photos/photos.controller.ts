@@ -7,6 +7,7 @@ import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiTags } fro
 import { PhotosService } from './photos.service';
 import { CreatePhotoDto } from './dto/create-photo.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { parseIntParam } from '../common/utils/parse-int';
 
 @ApiBearerAuth('JWT')
 @ApiTags('Photos')
@@ -36,8 +37,8 @@ export class PhotosController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   feed(@Request() req, @Query('page') page?: string, @Query('limit') limit?: string) {
     return this.photosService.feed(req.user.id, {
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 50,
+      page: parseIntParam(page, 1),
+      limit: parseIntParam(limit, 50, { max: 100 }),
     });
   }
 

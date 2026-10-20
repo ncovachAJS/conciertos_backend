@@ -62,22 +62,9 @@ export class ConcertsService {
       }),
     ]);
 
-    // Deduplicar: si hay un concierto propio y uno compartido del mismo artista+fecha,
-    // quedarse solo con el propio — PERO siempre incluir todos los IDs únicos
-    // para que las notificaciones puedan resolver el concierto por ID
-    const seen = new Map<string, string>(); // key -> concertId propio
+    // Se devuelven siempre todos los conciertos (propios y compartidos): el frontend
+    // decide qué mostrar y las notificaciones necesitan resolver el concierto por ID.
     const deduped = data
-      .filter((concert) => {
-        const date = concert.date;
-        const key = `${concert.artist.toLowerCase()}|${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
-        const isOwn = concert.userId === userId;
-        if (isOwn) {
-          seen.set(key, concert.id);
-          return true;
-        }
-        // Incluir siempre el concierto compartido — el frontend decide qué mostrar
-        return true;
-      })
       .map((concert) => {
         // Si el concierto no es del usuario, resetear valores personales
         if (concert.userId !== userId) {
@@ -358,12 +345,17 @@ export class ConcertsService {
 
   // ── Comentarios ────────────────────────────────────────────────────────────
 
-  async getComments(userId: string, concertId: string) {
-    // Verificar que el usuario tiene acceso: es dueño, participante o amigo del dueño
+  /**
+   * Comprueba que el usuario puede ver el concierto: es dueño, participante
+   * o amigo del dueño. Lanza 404/403 si no.
+   */
+  private async assertCanAccessConcert(userId: string, concertId: string) {
     const concert = await this.prisma.concert.findUnique({
       where: { id: concertId },
       select: {
         userId: true,
+        name: true,
+        artist: true,
         participants: { select: { userId: true } },
       },
     });
@@ -374,10 +366,15 @@ export class ConcertsService {
     const isParticipant = concert.participants.some((p) => p.userId === userId);
 
     if (!isOwner && !isParticipant) {
-      // Comprobar si son amigos
       const areFriends = await this.friendsService.areFriends(userId, concert.userId);
       if (!areFriends) throw new ForbiddenException('Sin acceso a este concierto');
     }
+
+    return concert;
+  }
+
+  async getComments(userId: string, concertId: string) {
+    await this.assertCanAccessConcert(userId, concertId);
 
     return this.prisma.concertComment.findMany({
       where: { concertId },
@@ -389,23 +386,20 @@ export class ConcertsService {
   }
 
   async addComment(userId: string, concertId: string, text: string) {
-    if (!text?.trim()) throw new Error('El comentario no puede estar vacío');
+    if (!text?.trim()) throw new BadRequestException('El comentario no puede estar vacío');
 
-    const [comment, concert] = await Promise.all([
-      this.prisma.concertComment.create({
-        data: { concertId, userId, text: text.trim() },
-        include: {
-          user: { select: { id: true, name: true, avatarUrl: true } },
-        },
-      }),
-      this.prisma.concert.findUnique({
-        where: { id: concertId },
-        select: { userId: true, name: true, artist: true },
-      }),
-    ]);
+    // Mismo control de acceso que al leer comentarios (antes cualquiera podía comentar)
+    const concert = await this.assertCanAccessConcert(userId, concertId);
+
+    const comment = await this.prisma.concertComment.create({
+      data: { concertId, userId, text: text.trim() },
+      include: {
+        user: { select: { id: true, name: true, avatarUrl: true } },
+      },
+    });
 
     // Notificar al dueño del concierto (no al propio comentarista)
-    if (concert && concert.userId !== userId) {
+    if (concert.userId !== userId) {
       const concertName = concert.name || concert.artist;
       this.notificationsService
         .notifyConcertComment(userId, concert.userId, concertName, concertId)
@@ -419,7 +413,7 @@ export class ConcertsService {
     const comment = await this.prisma.concertComment.findFirst({
       where: { id: commentId, userId },
     });
-    if (!comment) throw new Error('Comentario no encontrado o sin permisos');
+    if (!comment) throw new NotFoundException('Comentario no encontrado o sin permisos');
     return this.prisma.concertComment.delete({ where: { id: commentId } });
   }
 }

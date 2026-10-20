@@ -107,6 +107,14 @@ export class AuthService {
   }
 
   async resetPassword(token: string, newPassword: string) {
+    // Defensa en profundidad: también protege la ruta del formulario HTML, que no usa DTO.
+    if (typeof token !== 'string' || !/^[a-f0-9]{64}$/.test(token)) {
+      throw new BadRequestException('Token inválido o expirado');
+    }
+    if (typeof newPassword !== 'string') {
+      throw new BadRequestException('Contraseña inválida');
+    }
+
     const user = await this.usersService.findByResetToken(token);
 
     if (!user || !user.resetTokenExpiry) {
