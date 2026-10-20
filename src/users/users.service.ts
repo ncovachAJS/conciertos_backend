@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadsService } from '../uploads/uploads.service';
@@ -39,6 +39,9 @@ export class UsersService {
   }
 
   async updateAvatar(userId: string, avatarUrl: string) {
+    if (!this.uploadsService.isOwnedUrl(avatarUrl, userId)) {
+      throw new BadRequestException('avatarUrl no es una imagen válida de tu cuenta');
+    }
     // Obtener URL del avatar actual para borrarlo de Cloudinary después
     const current = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -53,7 +56,7 @@ export class UsersService {
 
     // Borrar el avatar anterior de Cloudinary en background (no bloqueamos la respuesta)
     if (current?.avatarUrl && current.avatarUrl !== avatarUrl) {
-      this.uploadsService.deleteImage(current.avatarUrl).catch(() => {});
+      this.uploadsService.deleteImage(current.avatarUrl, userId).catch(() => {});
     }
 
     return updated;
@@ -98,6 +101,10 @@ export class UsersService {
   }
 
   async deleteAccount(userId: string) {
+    // Primero Cloudinary: si se borrara antes la BBDD perderíamos la referencia
+    // a las imágenes. Un fallo aquí no debe impedir que el usuario elimine su cuenta.
+    await this.uploadsService.deleteUserImages(userId);
+
     // Elimina el usuario; las relaciones con onDelete:Cascade se borran en cascada.
     // Las que no lo tengan se borran primero explícitamente.
     await this.prisma.$transaction([
@@ -107,6 +114,8 @@ export class UsersService {
       this.prisma.friendship.deleteMany({
         where: { OR: [{ senderId: userId }, { receiverId: userId }] },
       }),
+      // Fotos subidas a conciertos de otros: su imagen ya se ha borrado de Cloudinary
+      this.prisma.concertPhoto.deleteMany({ where: { userId } }),
       this.prisma.concert.deleteMany({ where: { userId } }),
       this.prisma.user.delete({ where: { id: userId } }),
     ]);

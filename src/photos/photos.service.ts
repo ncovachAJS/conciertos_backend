@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { FriendsService } from '../friends/friends.service';
@@ -30,6 +30,10 @@ export class PhotosService {
       },
     });
     if (!concert) throw new NotFoundException('Concierto no encontrado');
+
+    if (!this.uploadsService.isOwnedUrl(dto.imageUrl, userId)) {
+      throw new BadRequestException('imageUrl no es una imagen válida de tu cuenta');
+    }
 
     const photo = await this.prisma.concertPhoto.create({
       data: { concertId, imageUrl: dto.imageUrl, caption: dto.caption ?? null, userId },
@@ -129,7 +133,7 @@ export class PhotosService {
     if (!photo) throw new NotFoundException('Foto no encontrada');
     await this.prisma.concertPhoto.delete({ where: { id } });
     // Borrar de Cloudinary en background — no bloqueamos la respuesta
-    this.uploadsService.deleteImage(photo.imageUrl).catch(() => {});
+    this.uploadsService.deleteImage(photo.imageUrl, photo.userId ?? userId).catch(() => {});
     this.logger.log(`Foto eliminada: ${id}`);
     return photo;
   }
