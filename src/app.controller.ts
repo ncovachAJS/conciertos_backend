@@ -37,8 +37,8 @@ export class AppController {
   <h2>Desde la app (recomendado)</h2>
   <ol>
     <li>Abre la app <strong>La Vida en Directo</strong></li>
-    <li>Ve a tu <strong>Perfil</strong> (icono de persona, abajo a la derecha)</li>
-    <li>Desplázate hasta el final y pulsa <strong>«Eliminar cuenta»</strong></li>
+    <li>Pulsa tu <strong>foto de perfil</strong> (arriba a la derecha) para abrir tu <strong>Perfil</strong></li>
+    <li>Entra en <strong>Ajustes</strong>, desplázate hasta el final y pulsa <strong>«Eliminar cuenta»</strong></li>
     <li>Confirma la acción en el diálogo que aparece</li>
   </ol>
   <p>Tu cuenta y todos tus datos (conciertos, fotos, amigos) se eliminarán de forma permanente e inmediata.</p>
@@ -125,7 +125,7 @@ export class AppController {
 
   <h2>1. Responsable del tratamiento</h2>
   <table>
-    <tr><th>Nombre / Razón social</th><td>La Vida en Directo (Nicolás Covacha, desarrollador individual)</td></tr>
+    <tr><th>Nombre / Razón social</th><td>La Vida en Directo (Nicolás Covach, desarrollador individual)</td></tr>
     <tr><th>Email de contacto</th><td><a href="mailto:ncovach@gmail.com">ncovach@gmail.com</a></td></tr>
     <tr><th>Email de privacidad</th><td><a href="mailto:ncovach@gmail.com">ncovach@gmail.com</a></td></tr>
   </table>
@@ -233,7 +233,7 @@ export class AppController {
   <p>Ninguna de estas integraciones transmite datos personales del usuario a dichos terceros.</p>
 
   <h2>11. Eliminación de cuenta</h2>
-  <p>Puedes eliminar tu cuenta desde <strong>Ajustes → Eliminar cuenta</strong> en la app. La eliminación borra permanentemente tu perfil, conciertos, fotos, relaciones de amistad y notificaciones. El proceso es irreversible; tus datos se borran de forma definitiva tras el período de retención en copia de seguridad (30 días). Más detalle en <a href="/delete-account">/delete-account</a>.</p>
+  <p>Puedes eliminar tu cuenta desde <strong>Perfil → Ajustes → Eliminar cuenta</strong> en la app. La eliminación borra permanentemente tu perfil, conciertos, fotos, relaciones de amistad y notificaciones. El proceso es irreversible; tus datos se borran de forma definitiva tras el período de retención en copia de seguridad (30 días). Más detalle en <a href="/delete-account">/delete-account</a>.</p>
 
   <h2>12. Cambios en esta política</h2>
   <p>Si realizamos cambios materiales en esta política, te notificaremos mediante una notificación push o un aviso dentro de la app, con al menos <strong>15 días de antelación</strong> antes de que entren en vigor. El uso continuado de la app tras esa fecha implica la aceptación de los cambios.</p>
