@@ -57,7 +57,7 @@ describe('ConcertsController', () => {
       const dto = { artist: 'Artista', date: '2025-06-01' } as any;
       const result = await controller.create(mockReq, dto);
       expect(mockConcertsService.create).toHaveBeenCalledWith('u1', dto);
-      expect(result.id).toBe('c1');
+      expect(result!.id).toBe('c1');
     });
   });
 
@@ -66,7 +66,7 @@ describe('ConcertsController', () => {
       mockConcertsService.update.mockResolvedValue(baseConcert);
       const result = await controller.update(mockReq, 'c1', { artist: 'Nuevo' } as any);
       expect(mockConcertsService.update).toHaveBeenCalledWith('u1', 'c1', { artist: 'Nuevo' });
-      expect(result.id).toBe('c1');
+      expect(result!.id).toBe('c1');
     });
   });
 
@@ -75,7 +75,7 @@ describe('ConcertsController', () => {
       mockConcertsService.remove.mockResolvedValue(baseConcert);
       const result = await controller.remove(mockReq, 'c1');
       expect(mockConcertsService.remove).toHaveBeenCalledWith('u1', 'c1');
-      expect(result.id).toBe('c1');
+      expect(result!.id).toBe('c1');
     });
   });
 

@@ -30,6 +30,7 @@ const mockPrisma = {
   notification: { deleteMany: jest.fn() },
   deviceToken: { deleteMany: jest.fn() },
   friendship: { deleteMany: jest.fn() },
+  concertPhoto: { deleteMany: jest.fn() },
   concert: { deleteMany: jest.fn() },
   $transaction: jest.fn(),
 };
@@ -43,7 +44,14 @@ describe('UsersService', () => {
       providers: [
         UsersService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: UploadsService, useValue: { deleteImage: jest.fn().mockResolvedValue(undefined) } },
+        {
+          provide: UploadsService,
+          useValue: {
+            deleteImage: jest.fn().mockResolvedValue(undefined),
+            deleteUserImages: jest.fn().mockResolvedValue(undefined),
+            isOwnedUrl: jest.fn().mockReturnValue(true),
+          },
+        },
       ],
     }).compile();
     service = module.get<UsersService>(UsersService);
@@ -61,13 +69,13 @@ describe('UsersService', () => {
 
   describe('findByEmail', () => {
     it('returns user when found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(mockUser);
+      mockPrisma.user.findFirst.mockResolvedValue(mockUser);
       const result = await service.findByEmail('nico@test.com');
       expect(result!.id).toBe('u1');
     });
 
     it('returns null when not found', async () => {
-      mockPrisma.user.findUnique.mockResolvedValue(null);
+      mockPrisma.user.findFirst.mockResolvedValue(null);
       expect(await service.findByEmail('missing@test.com')).toBeNull();
     });
   });

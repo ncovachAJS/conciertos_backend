@@ -34,7 +34,12 @@ const mockUsersService = {
 };
 
 const mockJwtService = { sign: jest.fn().mockReturnValue('jwt-token') };
-const mockEmailService = { sendPasswordReset: jest.fn() };
+const mockEmailService = {
+  sendPasswordReset: jest.fn(),
+  sendWelcome: jest.fn().mockResolvedValue(undefined),
+};
+
+const validToken = 'a'.repeat(64);
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -164,7 +169,7 @@ describe('AuthService', () => {
 
     it('throws BadRequestException when token missing expiry', async () => {
       mockUsersService.findByResetToken.mockResolvedValue({ ...mockUser, resetTokenExpiry: null });
-      await expect(service.resetPassword('tok', 'newpwd')).rejects.toThrow(BadRequestException);
+      await expect(service.resetPassword(validToken, 'newpwd')).rejects.toThrow(BadRequestException);
     });
 
     it('throws BadRequestException when token expired', async () => {
@@ -173,7 +178,7 @@ describe('AuthService', () => {
         resetTokenExpiry: new Date(Date.now() - 1000),
       });
       mockUsersService.clearResetToken.mockResolvedValue(undefined);
-      await expect(service.resetPassword('tok', 'newpwd')).rejects.toThrow(BadRequestException);
+      await expect(service.resetPassword(validToken, 'newpwd')).rejects.toThrow(BadRequestException);
     });
 
     it('throws BadRequestException when password too short', async () => {
@@ -181,7 +186,7 @@ describe('AuthService', () => {
         ...mockUser,
         resetTokenExpiry: new Date(Date.now() + 60_000),
       });
-      await expect(service.resetPassword('tok', 'abc')).rejects.toThrow(BadRequestException);
+      await expect(service.resetPassword(validToken, 'abc')).rejects.toThrow(BadRequestException);
     });
 
     it('updates password and clears token on valid data', async () => {
@@ -193,7 +198,7 @@ describe('AuthService', () => {
       mockUsersService.updatePassword.mockResolvedValue(undefined);
       mockUsersService.clearResetToken.mockResolvedValue(undefined);
 
-      const result = await service.resetPassword('tok', 'newpassword');
+      const result = await service.resetPassword(validToken, 'newpassword');
       expect(result.message).toContain('actualizada');
       expect(mockUsersService.updatePassword).toHaveBeenCalledWith('user-1', 'newhash');
       expect(mockUsersService.clearResetToken).toHaveBeenCalledWith('user-1');

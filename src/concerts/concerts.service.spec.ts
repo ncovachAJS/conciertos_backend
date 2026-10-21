@@ -28,6 +28,7 @@ const baseConcert = {
   price: 30,
   createdAt: new Date(),
   updatedAt: new Date(),
+  visibleToFriends: true,
   participants: [],
   user: { id: 'u1', name: 'Nico', avatarUrl: null },
 };
@@ -320,7 +321,7 @@ describe('ConcertsService', () => {
     it('creates comment and notifies owner when commenter != owner', async () => {
       const comment = { id: 'cm1', text: 'Buena', user: { id: 'u2', name: 'Ana', avatarUrl: null } };
       mockPrisma.concertComment.create.mockResolvedValue(comment);
-      mockPrisma.concert.findUnique.mockResolvedValue({ userId: 'u1', name: 'Show', artist: 'Artista' });
+      mockPrisma.concert.findUnique.mockResolvedValue({ userId: 'u1', name: 'Show', artist: 'Artista', participants: [] });
       const result = await service.addComment('u2', 'c1', 'Buena');
       expect(result.text).toBe('Buena');
       expect(mockNotificationsService.notifyConcertComment).toHaveBeenCalledWith('u2', 'u1', 'Show', 'c1');
@@ -329,7 +330,7 @@ describe('ConcertsService', () => {
     it('does not notify when commenter is owner', async () => {
       const comment = { id: 'cm1', text: 'Buena', user: { id: 'u1', name: 'Nico', avatarUrl: null } };
       mockPrisma.concertComment.create.mockResolvedValue(comment);
-      mockPrisma.concert.findUnique.mockResolvedValue({ userId: 'u1', name: 'Show', artist: 'Artista' });
+      mockPrisma.concert.findUnique.mockResolvedValue({ userId: 'u1', name: 'Show', artist: 'Artista', participants: [] });
       await service.addComment('u1', 'c1', 'Buena');
       expect(mockNotificationsService.notifyConcertComment).not.toHaveBeenCalled();
     });

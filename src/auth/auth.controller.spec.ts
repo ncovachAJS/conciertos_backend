@@ -65,7 +65,7 @@ describe('AuthController', () => {
   describe('resetPassword', () => {
     it('delegates to authService.resetPassword', async () => {
       mockAuthService.resetPassword.mockResolvedValue({ message: 'Contraseña actualizada correctamente' });
-      const result = await controller.resetPassword('tok', 'newpwd');
+      const result = await controller.resetPassword({ token: 'tok', password: 'newpwd' });
       expect(result.message).toContain('actualizada');
     });
   });
