@@ -18,6 +18,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { WantToAttendModule } from './want-to-attend/want-to-attend.module';
 import { SetlistModule } from './setlist/setlist.module';
 import { RecordsModule } from './records/records.module';
+import { AdminModule } from './admin/admin.module';
 
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { initializeApp, getApps, cert } = require('firebase-admin/app');
@@ -53,6 +54,7 @@ if (!getApps().length) {
     WantToAttendModule,
     SetlistModule,
     RecordsModule,
+    AdminModule,
   ],
   providers: [
     AppService,

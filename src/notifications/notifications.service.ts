@@ -133,6 +133,51 @@ export class NotificationsService {
     await this._sendPushToMany(recipientIds, title, body, { concertId });
   }
 
+  /**
+   * Aviso de un administrador a un conjunto de usuarios: notificación en la
+   * app (opcional) + push. Devuelve cuántos usuarios y dispositivos alcanza.
+   */
+  async broadcast({
+    senderId,
+    userIds,
+    title,
+    body,
+    inApp,
+    onlyTokens,
+    data,
+  }: {
+    senderId: string;
+    userIds: string[];
+    title: string;
+    body: string;
+    inApp: boolean;
+    /** Si se indica, la push solo va a estos dispositivos (filtro por versión). */
+    onlyTokens?: string[];
+    /** Metadatos del aviso (p. ej. `target`): van en la bandeja y en la push. */
+    data?: Record<string, string>;
+  }) {
+    if (inApp && userIds.length) {
+      await this.prisma.notification.createMany({
+        data: userIds.map((userId) => ({
+          userId,
+          senderId,
+          type: NotificationType.ANNOUNCEMENT,
+          title,
+          body,
+          ...(data ? { data } : {}),
+        })),
+      });
+    }
+    const devices = await this._sendPushToMany(
+      userIds,
+      title,
+      body,
+      { type: 'ANNOUNCEMENT', ...(data ?? {}) },
+      onlyTokens,
+    );
+    return { recipients: userIds.length, devices };
+  }
+
   async deleteOne(userId: string, notificationId: string) {
     return this.prisma.notification.deleteMany({
       where: { id: notificationId, userId },
@@ -175,11 +220,17 @@ export class NotificationsService {
     });
   }
 
-  async saveToken(userId: string, token: string, platform: string) {
+  async saveToken(
+    userId: string,
+    token: string,
+    platform: string,
+    version: { appVersion?: string; appBuild?: number } = {},
+  ) {
+    const { appVersion, appBuild } = version;
     return this.prisma.deviceToken.upsert({
       where: { token },
-      create: { userId, token, platform },
-      update: { userId },
+      create: { userId, token, platform, appVersion, appBuild },
+      update: { userId, appVersion, appBuild },
     });
   }
 
@@ -207,35 +258,48 @@ export class NotificationsService {
     title: string,
     body: string,
     data: Record<string, string>,
-  ) {
-    if (!userIds.length) return;
+    onlyTokens?: string[],
+  ): Promise<number> {
+    if (!userIds.length) return 0;
 
     const tokens = await this.prisma.deviceToken.findMany({
-      where: { userId: { in: userIds } },
+      where: {
+        userId: { in: userIds },
+        ...(onlyTokens ? { token: { in: onlyTokens } } : {}),
+      },
       select: { token: true },
     });
 
-    if (!tokens.length) return;
+    if (!tokens.length) return 0;
 
-    const tokenList = tokens.map((t: any) => t.token);
+    const tokenList: string[] = tokens.map((t: any) => t.token);
 
-    try {
-      const response = await getMessaging().sendEachForMulticast({
-        tokens: tokenList,
-        notification: { title, body },
-        data,
-        android: { priority: 'high' },
-        apns: { payload: { aps: { sound: 'default', badge: 1 } } },
-      });
+    // FCM admite como máximo 500 tokens por llamada multicast.
+    for (let i = 0; i < tokenList.length; i += 500) {
+      const chunk = tokenList.slice(i, i + 500);
+      try {
+        const response = await getMessaging().sendEachForMulticast({
+          tokens: chunk,
+          notification: { title, body },
+          data,
+          android: { priority: 'high' },
+          apns: { payload: { aps: { sound: 'default', badge: 1 } } },
+        });
 
-      response.responses.forEach(async (res: any, idx: number) => {
-        if (!res.success && res.error?.code === 'messaging/registration-token-not-registered') {
-          await this.prisma.deviceToken.deleteMany({ where: { token: tokenList[idx] } });
+        const stale: string[] = [];
+        response.responses.forEach((res: any, idx: number) => {
+          if (!res.success && res.error?.code === 'messaging/registration-token-not-registered') {
+            stale.push(chunk[idx]);
+          }
+        });
+        if (stale.length) {
+          await this.prisma.deviceToken.deleteMany({ where: { token: { in: stale } } });
         }
-      });
-    } catch (e) {
-      this.logger.warn(`Push error: ${e}`);
+      } catch (e) {
+        this.logger.warn(`Push error: ${e}`);
+      }
     }
+    return tokenList.length;
   }
 
   private async _getSenderName(senderId: string): Promise<string> {

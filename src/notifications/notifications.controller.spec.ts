@@ -69,7 +69,10 @@ describe('NotificationsController', () => {
   it('saveToken delegates with userId + token + platform', async () => {
     mockNotificationsService.saveToken.mockResolvedValue({});
     await controller.saveToken(mockReq, { token: 'fcm-token', platform: 'ios' });
-    expect(mockNotificationsService.saveToken).toHaveBeenCalledWith('u1', 'fcm-token', 'ios');
+    expect(mockNotificationsService.saveToken).toHaveBeenCalledWith('u1', 'fcm-token', 'ios', {
+      appVersion: undefined,
+      appBuild: undefined,
+    });
   });
 
   it('removeToken delegates with token + userId', async () => {

@@ -15,6 +15,8 @@ model User {
 
   avatarUrl   String?
   isPro       Boolean @default(false)
+  // Acceso al panel de administración (se asigna a mano en la BBDD).
+  isAdmin     Boolean @default(false)
   showSpotify Boolean @default(false)
 
   resetToken       String?   @unique
@@ -149,6 +151,7 @@ enum NotificationType {
   FRIEND_ACCEPTED // solicitud aceptada
   FRIEND_CONCERT // un amigo añadió un concierto
   CONCERT_COMMENT // alguien comentó en tu concierto
+  ANNOUNCEMENT // aviso enviado por un administrador a los usuarios
 }
 
 model Notification {
@@ -207,6 +210,9 @@ model DeviceToken {
   userId    String
   token     String   @unique
   platform  String // 'android' | 'ios'
+  // Versión de la app que registró el token (null = cliente antiguo que no la envía).
+  appVersion String?
+  appBuild   Int?
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

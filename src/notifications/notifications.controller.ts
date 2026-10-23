@@ -2,7 +2,7 @@ import {
   Body, Controller, Delete, Get, Param, Post, Put, Req, UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
-import { IsIn, IsString } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
@@ -10,6 +10,9 @@ import { NotificationsService } from './notifications.service';
 class SaveTokenDto {
   @IsString() token!: string;
   @IsIn(['android', 'ios']) platform!: 'android' | 'ios';
+  /** Versión legible (1.4.1) y número de build (23) de la app instalada. */
+  @IsOptional() @IsString() @MaxLength(20) appVersion?: string;
+  @IsOptional() @IsInt() @Min(0) @Max(100_000_000) appBuild?: number;
 }
 
 @ApiBearerAuth('JWT')
@@ -60,7 +63,10 @@ export class NotificationsController {
   @ApiOperation({ summary: 'Registrar token FCM del dispositivo' })
   @ApiBody({ type: SaveTokenDto })
   saveToken(@Req() req: any, @Body() dto: SaveTokenDto) {
-    return this.svc.saveToken(req.user.id, dto.token, dto.platform);
+    return this.svc.saveToken(req.user.id, dto.token, dto.platform, {
+      appVersion: dto.appVersion,
+      appBuild: dto.appBuild,
+    });
   }
 
   @Put('token/remove')
