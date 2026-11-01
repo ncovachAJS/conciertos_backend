@@ -305,6 +305,30 @@ export class AdminService {
     };
   }
 
+  async getCloudinaryUsage() {
+    const cloud  = process.env.CLOUDINARY_CLOUD_NAME;
+    const key    = process.env.CLOUDINARY_API_KEY;
+    const secret = process.env.CLOUDINARY_API_SECRET;
+
+    if (!cloud || !key || !secret) {
+      return { error: 'Credenciales de Cloudinary no configuradas en el backend' };
+    }
+
+    const url  = `https://api.cloudinary.com/v1_1/${cloud}/usage`;
+    const auth = Buffer.from(`${key}:${secret}`).toString('base64');
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Basic ${auth}` },
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!res.ok) {
+      return { error: `Cloudinary respondió con HTTP ${res.status}` };
+    }
+
+    return res.json();
+  }
+
   async setPro(adminId: string, userId: string, isPro: boolean) {
     const exists = await this.prisma.user.findUnique({
       where: { id: userId },

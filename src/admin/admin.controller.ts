@@ -36,6 +36,12 @@ export class AdminController {
     return this.service.getVersions();
   }
 
+  @Get('cloudinary/usage')
+  @ApiOperation({ summary: 'Uso de créditos de Cloudinary (proxy desde el backend)' })
+  getCloudinaryUsage() {
+    return this.service.getCloudinaryUsage();
+  }
+
   @Get('broadcast/preview')
   @ApiOperation({ summary: 'A cuántos usuarios llegaría un aviso (no envía nada)' })
   previewBroadcast(@Query() q: BroadcastPreviewQuery) {
