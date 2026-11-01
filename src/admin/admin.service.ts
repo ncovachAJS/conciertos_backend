@@ -328,6 +328,12 @@ export class AdminService {
     };
   }
 
+  async getExternalStatus(url: string) {
+    const res = await fetch(url, { signal: AbortSignal.timeout(8_000) });
+    if (!res.ok) return { error: `HTTP ${res.status}` };
+    return res.json();
+  }
+
   async getCloudinaryUsage() {
     const cloud  = process.env.CLOUDINARY_CLOUD_NAME;
     const key    = process.env.CLOUDINARY_API_KEY;

@@ -42,6 +42,18 @@ export class AdminController {
     return this.service.getCloudinaryUsage();
   }
 
+  @Get('status/neon')
+  @ApiOperation({ summary: 'Estado de Neon (proxy para evitar CORS)' })
+  getNeonStatus() {
+    return this.service.getExternalStatus('https://neonstatus.com/api/v2/status.json');
+  }
+
+  @Get('status/firebase')
+  @ApiOperation({ summary: 'Estado de Firebase (proxy para evitar CORS)' })
+  getFirebaseStatus() {
+    return this.service.getExternalStatus('https://status.firebase.google.com/api/v2/status.json');
+  }
+
   @Get('broadcast/preview')
   @ApiOperation({ summary: 'A cuántos usuarios llegaría un aviso (no envía nada)' })
   previewBroadcast(@Query() q: BroadcastPreviewQuery) {
