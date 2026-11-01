@@ -291,16 +291,36 @@ export class AdminService {
           isPro: true,
           isAdmin: true,
           createdAt: true,
-          _count: { select: { concerts: true } },
+          _count: {
+            select: {
+              concerts: true,
+              photos: true,
+              comments: true,
+              wantToAttend: true,
+              records: true,
+            },
+          },
+          deviceTokens: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { appVersion: true, appBuild: true, platform: true },
+          },
         },
       }),
     ]);
 
     return {
       total,
-      items: items.map(({ _count, ...u }) => ({
+      items: items.map(({ _count, deviceTokens, ...u }) => ({
         ...u,
         concertCount: _count.concerts,
+        photoCount: _count.photos,
+        commentCount: _count.comments,
+        wantToAttendCount: _count.wantToAttend,
+        recordCount: _count.records,
+        appVersion: deviceTokens[0]?.appVersion ?? null,
+        appBuild: deviceTokens[0]?.appBuild ?? null,
+        platform: deviceTokens[0]?.platform ?? null,
       })),
     };
   }
