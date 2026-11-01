@@ -301,7 +301,10 @@ export class AdminService {
             },
           },
           deviceTokens: {
-            orderBy: { createdAt: 'desc' },
+            orderBy: [
+              { appBuild: { sort: 'desc', nulls: 'last' } },
+              { createdAt: 'desc' },
+            ],
             take: 1,
             select: { appVersion: true, appBuild: true, platform: true },
           },
