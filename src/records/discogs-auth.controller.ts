@@ -16,7 +16,6 @@ import { Throttle } from '@nestjs/throttler';
 import { IsString, MaxLength } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { DiscogsOauthService } from './discogs-oauth.service';
-import { ProGuard } from './pro.guard';
 
 class FinishDto {
   @IsString() @MaxLength(200) oauthToken: string;
@@ -33,7 +32,7 @@ export class DiscogsAuthController {
 
   /** Devuelve la URL de Discogs donde el usuario autoriza la app. */
   @ApiBearerAuth('JWT')
-  @UseGuards(JwtAuthGuard, ProGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('connect/start')
   @Throttle({ global: { ttl: 60_000, limit: 10 } })
   start(@Req() req: any) {
@@ -64,7 +63,7 @@ export class DiscogsAuthController {
   }
 
   @ApiBearerAuth('JWT')
-  @UseGuards(JwtAuthGuard, ProGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('connect/finish')
   @Throttle({ global: { ttl: 60_000, limit: 10 } })
   finish(@Req() req: any, @Body() dto: FinishDto) {
@@ -75,14 +74,14 @@ export class DiscogsAuthController {
   }
 
   @ApiBearerAuth('JWT')
-  @UseGuards(JwtAuthGuard, ProGuard)
+  @UseGuards(JwtAuthGuard)
   @Get('status')
   status(@Req() req: any) {
     return this.oauth.status(req.user.id);
   }
 
   @ApiBearerAuth('JWT')
-  @UseGuards(JwtAuthGuard, ProGuard)
+  @UseGuards(JwtAuthGuard)
   @Post('import')
   @Throttle({ global: { ttl: 60_000, limit: 3 } })
   import(@Req() req: any) {
@@ -90,7 +89,7 @@ export class DiscogsAuthController {
   }
 
   @ApiBearerAuth('JWT')
-  @UseGuards(JwtAuthGuard, ProGuard)
+  @UseGuards(JwtAuthGuard)
   @Delete('connection')
   disconnect(@Req() req: any) {
     return this.oauth.disconnect(req.user.id);

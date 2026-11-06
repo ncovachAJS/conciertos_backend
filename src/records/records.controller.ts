@@ -18,12 +18,11 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { DiscogsService } from './discogs.service';
-import { ProGuard } from './pro.guard';
 import { CreateRecordDto, UpdateRecordDto } from './records.dto';
 import { RecordsService } from './records.service';
 
 @ApiBearerAuth('JWT')
-@UseGuards(JwtAuthGuard, ProGuard)
+@UseGuards(JwtAuthGuard)
 @ApiTags('Records')
 @Controller('records')
 export class RecordsController {

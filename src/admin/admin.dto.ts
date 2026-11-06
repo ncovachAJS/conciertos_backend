@@ -21,6 +21,7 @@ export const ANNOUNCEMENT_TARGETS = [
   'friends',
   'statistics',
   'records',
+  'whatsnew',
 ] as const;
 export type AnnouncementTarget = (typeof ANNOUNCEMENT_TARGETS)[number];
 
