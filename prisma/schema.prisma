@@ -233,6 +233,8 @@ model Record {
   coverUrl  String?
   discogsId Int? // ID de la release en Discogs (null si se añadió a mano)
   notes     String?
+  // true si vino de la importación de Discogs (se borra al desvincular la cuenta)
+  imported  Boolean  @default(false)
   // 'OWNED' (en la colección) | 'WISHLIST' (lista de deseos)
   status    String   @default("OWNED")
   // Estado físico (escala Goldmine): M, NM, VG+, VG, G, P

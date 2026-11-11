@@ -123,7 +123,7 @@ export class DiscogsOauthService {
   async disconnect(userId: string) {
     const [deleted] = await this.prisma.$transaction([
       this.prisma.record.deleteMany({
-        where: { userId, discogsId: { not: null } },
+        where: { userId, imported: true },
       }),
       this.prisma.discogsConnection.deleteMany({ where: { userId } }),
     ]);
@@ -160,6 +160,7 @@ export class DiscogsOauthService {
       return {
         userId,
         status,
+        imported: true,
         discogsId: b.id as number,
         title: String(b.title ?? ''),
         artist: this.discogs.joinArtists(b.artists),
