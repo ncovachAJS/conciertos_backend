@@ -121,8 +121,13 @@ export class DiscogsOauthService {
   }
 
   async disconnect(userId: string) {
-    await this.prisma.discogsConnection.deleteMany({ where: { userId } });
-    return { disconnected: true };
+    const [deleted] = await this.prisma.$transaction([
+      this.prisma.record.deleteMany({
+        where: { userId, discogsId: { not: null } },
+      }),
+      this.prisma.discogsConnection.deleteMany({ where: { userId } }),
+    ]);
+    return { disconnected: true, deletedRecords: deleted.count };
   }
 
   // ── Importación ────────────────────────────────────────────────────────
